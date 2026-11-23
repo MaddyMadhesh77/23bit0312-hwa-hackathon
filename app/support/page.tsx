@@ -1,3 +1,8 @@
+export const metadata = {
+  title: "Support",
+  description: "Shipping, returns, contact and about TickTail.",
+};
+
 export default function SupportPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:py-16">
