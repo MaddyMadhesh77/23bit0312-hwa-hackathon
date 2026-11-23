@@ -107,7 +107,7 @@ export function planSession(
     notes.push("Size L — supervise closely, this is a strong chewer range.");
   }
   if (normalizedHours > 6) {
-    notes.push("Refill midday for full-day coverage.");
+    notes.push("For a longer routine, pause for a refill around the midpoint.");
   }
 
   const plan = { size, chambers, notes } as CompatibleSessionPlan;

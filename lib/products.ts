@@ -67,7 +67,7 @@ export const PRODUCTS: Product[] = [
     id: 'tray-set',
     name: 'Replacement Tray Set',
     description:
-      'A set of replacement trays for your TickTail station, so you can swap, clean and keep going without missing a day.',
+      'A set of replacement trays for your TickTail station, so you can swap, clean and keep the station ready.',
     pricePaise: 59900,
     stock: 3,
     image: '/images/hero.webp',

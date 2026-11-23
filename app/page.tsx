@@ -43,7 +43,7 @@ export default function Home() {
             The puzzle toy that paces itself.
           </h1>
           <p className="mt-6 text-lg text-muted">
-            A wind-up tower that unlocks six puzzles over six hours. No batteries.
+            A wind-up tower that unlocks six puzzles, one per hour. No batteries.
             No apps.
           </p>
           <Link href="/product" className="btn btn-primary mt-8">
@@ -122,7 +122,7 @@ export default function Home() {
               </tr>
               <tr className="bg-primary/10 font-semibold">
                 <td className="p-3">TickTail</td>
-                <td className="p-3">2–6 hours</td>
+                <td className="p-3">Designed for 2–6 hours</td>
                 <td className="p-3">Six skills</td>
                 <td className="p-3">None — clockwork</td>
                 <td className="p-3">Sealed chambers</td>

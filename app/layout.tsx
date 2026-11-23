@@ -23,7 +23,7 @@ export const metadata = {
     template: "%s | TickTail",
   },
   description:
-    "A wind-up, battery-free puzzle tower that unlocks six puzzles over hours. Designed for 2 to 6 hours of engagement.",
+    "A wind-up, battery-free puzzle tower designed for 2 to 6 hours of engagement, with six puzzles unlocking roughly every 45–60 minutes.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

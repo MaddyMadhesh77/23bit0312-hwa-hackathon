@@ -7,7 +7,7 @@ const FAQS = [
   {
     question: "Is it really battery-free?",
     answer:
-      "Yes. A wound spring and escapement, like a kitchen timer, unlocks one chamber per hour. Wind it and walk away.",
+      "Yes. A wound spring and escapement, like a kitchen timer, are designed to unlock one chamber roughly every 45–60 minutes — about one per hour. Wind it and walk away.",
   },
   {
     question: "What treats can I use?",

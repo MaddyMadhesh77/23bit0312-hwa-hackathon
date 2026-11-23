@@ -13,7 +13,7 @@ export default function PlannerPage() {
         TickTail Planner
       </h1>
       <p className="mt-4 max-w-2xl leading-relaxed text-muted">
-        Tell us about your dog and build a calm, engaging session for the hours
+        Tell us about your dog and build a calm, engaging session for the time
         they spend alone.
       </p>
       <div className="mt-10">

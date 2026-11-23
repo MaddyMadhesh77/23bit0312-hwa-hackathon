@@ -44,9 +44,10 @@ export default function SupportPage() {
             About
           </h2>
           <p className="mt-3 leading-relaxed text-muted">
-            TickTail is a clockwork puzzle tower: a wound spring and escapement
-            unlock one of six puzzle trays per hour. No batteries, no apps — just
-            engineering.
+            TickTail is a clockwork puzzle tower designed for 2–6 hours of
+            engagement. Its wound spring and escapement unlock one of six puzzle
+            trays roughly every 45–60 minutes — about one per hour. No batteries,
+            no apps — just engineering.
           </p>
         </section>
       </div>

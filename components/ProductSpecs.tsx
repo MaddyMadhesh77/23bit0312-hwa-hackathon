@@ -36,10 +36,10 @@ export default function ProductSpecs() {
         <h3 className="font-semibold">How the mechanism works</h3>
         <p className="text-sm text-muted">
           One wind stores energy in a mainspring — the same mechanism as a kitchen
-          timer, only geared for hours instead of minutes. A governor and escapement
+          timer, only geared for hour-by-hour releases. A governor and escapement
           meter that energy out at a steady rate, releasing one chamber roughly every
-          45–60 minutes until all six are open. No batteries, no electronics, nothing
-          to charge.
+          45–60 minutes — about one per hour — until all six are open. No batteries,
+          no electronics, nothing to charge.
         </p>
       </div>
     </div>
