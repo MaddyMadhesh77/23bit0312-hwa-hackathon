@@ -1,49 +1,53 @@
-import { sql, type QueryResult } from "@vercel/postgres";
+import { sql } from "@vercel/postgres";
 
-export async function GET(request: Request, { params }: { params: Promise<{ code: string }> }) {
-  const { code } = await params;
-  const upperCode = code.toUpperCase();
+type OrderRow = Record<string, unknown> & {
+  email: string;
+};
 
+function jsonResponse(body: unknown, status: number): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+function maskEmail(email: string): string {
+  const separatorIndex = email.indexOf("@");
+  if (separatorIndex < 0) return `${email.charAt(0)}***`;
+
+  return `${email.charAt(0)}***${email.slice(separatorIndex)}`;
+}
+
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ code: string }> },
+): Promise<Response> {
   try {
-    const result: QueryResult = await sql`
-      SELECT * FROM orders WHERE code = ${upperCode}
+    const { code } = await params;
+    const upperCode = code.toUpperCase();
+
+    const result = await sql<OrderRow>`
+      SELECT *
+      FROM orders
+      WHERE code = ${upperCode}
     `;
 
-    const orders = result.rows;
-
-    if (!orders || orders.length === 0) {
-      return new Response(JSON.stringify({ error: "not_found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      });
+    const order = result.rows[0];
+    if (!order) {
+      return jsonResponse({ error: "not_found" }, 404);
     }
 
-    const order = orders[0];
+    const orderWithoutPhone = { ...order };
+    delete orderWithoutPhone.phone;
 
-    // Mask email: first char + "***@" + domain
-    const emailMasked = order.email
-      .split("@")
-      .map((part: string) => (part ? part[0] + "***" : part))
-      .join("@");
-
-    // Omit phone field
-    const { phone, ...orderWithoutPhone } = order;
-
-    return new Response(
-      JSON.stringify({
-        ...orderWithoutPhone,
-        email: emailMasked,
-      }),
+    return jsonResponse(
       {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
+        ...orderWithoutPhone,
+        email: maskEmail(order.email),
+      },
+      200,
     );
-  } catch (e) {
-    // Database not configured - return 404
-    return new Response(JSON.stringify({ error: "not_found" }), {
-      status: 404,
-      headers: { "Content-Type": "application/json" },
-    });
+  } catch {
+    return jsonResponse({ error: "internal_error" }, 500);
   }
 }
