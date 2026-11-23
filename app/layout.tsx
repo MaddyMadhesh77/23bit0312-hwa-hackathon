@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import { Fredoka, Inter } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
@@ -18,9 +17,13 @@ const inter = Inter({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: "TickTail",
-  description: "Mechanical, battery-free tick control built for real dogs.",
+export const metadata = {
+  title: {
+    default: "TickTail — the puzzle toy that paces itself",
+    template: "%s | TickTail",
+  },
+  description:
+    "A wind-up, battery-free puzzle tower that unlocks six puzzles over hours. Designed for 2 to 6 hours of engagement.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -1,5 +1,11 @@
 import DogPlanner from "@/components/DogPlanner";
 
+export const metadata = {
+  title: "Dog Planner",
+  description:
+    "Tell us your dog's weight, energy and time alone — get a size and tray plan.",
+};
+
 export default function PlannerPage() {
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 sm:py-14">

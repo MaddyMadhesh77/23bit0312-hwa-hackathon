@@ -4,6 +4,12 @@ import ProductFAQ from "@/components/ProductFAQ";
 import ProductSpecs from "@/components/ProductSpecs";
 import { PRODUCTS } from "@/lib/products";
 
+export const metadata = {
+  title: "TickTail Starter Kit",
+  description:
+    "Six sealed chambers, six different puzzles, one clockwork timer. Sizes S, M and L from ₹1,499.",
+};
+
 export default function ProductPage() {
   const kits = PRODUCTS.filter((product) => product.kind === "kit");
 
