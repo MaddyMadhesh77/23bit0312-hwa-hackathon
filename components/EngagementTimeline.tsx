@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 const TRAY_NAMES = ["Slide-lid", "Nose-flip", "Roll-out maze", "Scent-hide", "Lick-and-twist", "Pull-the-tab"];
@@ -11,8 +14,13 @@ const TRAY_SKILLS = [
 ];
 
 export default function EngagementTimeline() {
-  const storedSeg = localStorage.getItem("ticktail_engaged");
-  const highlighted = storedSeg ? parseInt(storedSeg, 10) : null;
+  const [highlighted, setHighlighted] = useState<number | null>(null);
+
+  useEffect(() => {
+    const storedSeg = window.localStorage.getItem("ticktail_engaged");
+    if (storedSeg) setHighlighted(parseInt(storedSeg, 10));
+  }, []);
+
   const showCard = highlighted !== null;
   const skill = highlighted !== null ? TRAY_SKILLS[highlighted - 1] : "";
 

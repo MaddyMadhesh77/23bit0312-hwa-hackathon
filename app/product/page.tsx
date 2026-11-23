@@ -13,13 +13,6 @@ export default function ProductPage() {
   const kits = PRODUCTS.filter((product) => product.kind === "kit");
   const selected = kits[0];
 
-  // Determine progress based on active engagement timeline segment
-  // segment 1 of 6 → 0/6, segment 2 of 6 → 1/6, segment 3 of 6 → 2/6 = 0.5, etc.
-  // We'll derive this from localStorage or default to 0
-  const storedSeg = localStorage.getItem("ticktail_engaged");
-  const activeSegment = storedSeg ? parseInt(storedSeg, 10) : 1;
-  const progress = activeSegment / 6;
-
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
       <p className="text-sm font-medium uppercase tracking-[0.18em] text-primary">

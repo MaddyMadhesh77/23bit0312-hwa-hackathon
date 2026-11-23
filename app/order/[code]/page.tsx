@@ -1,14 +1,13 @@
 import { sql } from "@vercel/postgres";
 import { formatINR } from "@/lib/products";
 import { PRODUCTS } from "@/lib/products";
-import { Link } from "next/link";
+import Link from "next/link";
 
-export default async function OrderPage({
-  params,
-}: {
-  params: { code: string }
-}) {
-  const code = params.code.toUpperCase();
+export const instant = false;
+
+export default async function OrderPage({ params }: PageProps<"/order/[code]">) {
+  const { code: rawCode } = await params;
+  const code = rawCode.toUpperCase();
 
   // Query the database directly
   const orders = await sql`SELECT * FROM orders WHERE code = ${code}`;

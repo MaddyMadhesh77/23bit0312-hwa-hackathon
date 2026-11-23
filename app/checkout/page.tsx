@@ -109,7 +109,7 @@ export default function CheckoutPage() {
       });
       /* typescript-ignore */
       if (R.ok) {
-        clearCart();
+        clearCart?.();
         window.location.href = "/order/confirmed?new=1";
         setSubmitState("success");
       } else if (R.status === 409) {
