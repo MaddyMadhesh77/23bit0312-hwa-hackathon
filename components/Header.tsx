@@ -32,6 +32,12 @@ export default function Header() {
             Planner
           </Link>
           <Link
+            href="/support"
+            className={`text-muted hover:text-ink ${focusRing}`}
+          >
+            Support
+          </Link>
+          <Link
             href="/track"
             className={`text-muted hover:text-ink ${focusRing}`}
           >
