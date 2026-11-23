@@ -1,3 +1,4 @@
+import EngagementTimeline from "@/components/EngagementTimeline";
 import ProductBuy from "@/components/ProductBuy";
 import { PRODUCTS } from "@/lib/products";
 
@@ -11,6 +12,8 @@ export default function ProductPage() {
         Six puzzles. Six hours. Zero batteries.
       </p>
       <ProductBuy kits={kits} />
+      <h2 className="text-2xl font-bold mt-12">Six hours of play, unlocked</h2>
+      <EngagementTimeline />
     </div>
   );
 }
