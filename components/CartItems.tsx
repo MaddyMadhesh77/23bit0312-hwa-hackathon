@@ -8,7 +8,17 @@ const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
 
 export default function CartItems() {
-  const { items, setQty, removeItem } = useCart();
+  const { items, hydrated, setQty, removeItem } = useCart();
+
+  if (!hydrated) {
+    return (
+      <div className="space-y-4" aria-hidden="true">
+        <div className="h-16 w-full animate-pulse rounded-2xl bg-muted/20" />
+        <div className="h-16 w-full animate-pulse rounded-2xl bg-muted/20" />
+        <div className="h-16 w-full animate-pulse rounded-2xl bg-muted/20" />
+      </div>
+    );
+  }
 
   const lines = items.flatMap((item) => {
     const product = PRODUCTS.find((candidate) => candidate.id === item.productId);

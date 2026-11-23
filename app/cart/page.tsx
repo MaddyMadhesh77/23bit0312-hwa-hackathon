@@ -5,18 +5,25 @@ import CartItems from "@/components/CartItems";
 import { useCart } from "@/lib/cart";
 
 export default function CartPage() {
-  const { items, isHydrated } = useCart();
+  const { items, hydrated } = useCart();
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
-      {!isHydrated ? (
-        <p className="text-center text-sm text-muted">Loading your cart…</p>
+      {!hydrated ? (
+        <div className="space-y-4" aria-hidden="true">
+          <div className="h-16 w-full animate-pulse rounded-2xl bg-muted/20" />
+          <div className="h-16 w-full animate-pulse rounded-2xl bg-muted/20" />
+          <div className="h-16 w-full animate-pulse rounded-2xl bg-muted/20" />
+        </div>
       ) : items.length === 0 ? (
         <div className="py-16 text-center">
           <p className="text-xl text-ink">
             Your cart is empty — meet TickTail
           </p>
-          <Link href="/product" className="btn btn-primary mt-6">
+          <Link
+            href="/product"
+            className="btn mt-6 bg-accent text-ink hover:bg-accent/90"
+          >
             Meet TickTail
           </Link>
         </div>

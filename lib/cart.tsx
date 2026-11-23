@@ -25,7 +25,7 @@ type CartContextValue = {
   isDrawerOpen: boolean;
   openDrawer: () => void;
   closeDrawer: () => void;
-  isHydrated: boolean;
+  hydrated: boolean;
 };
 
 export const CartContext = createContext<CartContextValue | null>(null);
@@ -60,7 +60,7 @@ function parseStoredItems(raw: string): CartItem[] {
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isHydrated, setIsHydrated] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
 
   // Load the saved cart only after mount so server and client renders match.
   useEffect(() => {
@@ -74,19 +74,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
 
     setItems(storedItems);
-    setIsHydrated(true);
+    setHydrated(true);
   }, []);
 
   // Persist every cart change after the initial localStorage load completes.
   useEffect(() => {
-    if (!isHydrated) return;
+    if (!hydrated) return;
 
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
     } catch {
       // The cart remains usable in memory when storage is unavailable.
     }
-  }, [items, isHydrated]);
+  }, [items, hydrated]);
 
   const addItem = useCallback((productId: string, qty: number) => {
     if (!Number.isInteger(qty) || qty < 1) return;
@@ -154,7 +154,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       isDrawerOpen,
       openDrawer,
       closeDrawer,
-      isHydrated,
+      hydrated,
     }),
     [
       items,
@@ -166,7 +166,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       isDrawerOpen,
       openDrawer,
       closeDrawer,
-      isHydrated,
+      hydrated,
     ],
   );
 
