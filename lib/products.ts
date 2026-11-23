@@ -54,6 +54,16 @@ export const PRODUCTS: Product[] = [
     kind: 'refill',
   },
   {
+    id: 'refill-intro',
+    name: 'Treat Refill Pack — first month',
+    description:
+      'Your first monthly refill, 15% off when bundled with a kit.',
+    pricePaise: 33900,
+    stock: 200,
+    image: '/images/hero.webp',
+    kind: 'refill',
+  },
+  {
     id: 'tray-set',
     name: 'Replacement Tray Set',
     description:
