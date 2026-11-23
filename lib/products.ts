@@ -79,11 +79,10 @@ export function getProduct(id: string): Product | undefined {
   return PRODUCTS.find((product) => product.id === id);
 }
 
-const inrFormatter = new Intl.NumberFormat('en-IN', {
-  style: 'currency',
-  currency: 'INR',
-});
-
 export function formatINR(paise: number): string {
-  return inrFormatter.format(paise / 100);
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(paise / 100);
 }
