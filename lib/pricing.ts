@@ -1,43 +1,55 @@
-import { PRODUCTS, getProduct } from "./products";
+import { getProduct } from "./products";
 
-export interface PricingResult {
+export type CartLine = {
+  productId: string;
+  qty: number;
+};
+
+export type PricingLine = {
+  productId: string;
+  name: string;
+  qty: number;
+  unitPricePaise: number;
+};
+
+export type OutOfStockLine = {
+  productId: string;
+  stock: number;
+};
+
+export type PricingResult = {
   unknownIds: string[];
-  outOfStock: { productId: string; stock: number }[];
+  outOfStock: OutOfStockLine[];
   subtotalPaise: number;
   shippingPaise: number;
   totalPaise: number;
-  lines: { productId: string; name: string; qty: number; unitPricePaise: number }[];
-}
-
-export interface CartLine {
-  productId: string;
-  qty: number;
-}
+  lines: PricingLine[];
+};
 
 export function computeTotals(items: CartLine[]): PricingResult {
   const unknownIds: string[] = [];
-  const outOfStock: { productId: string; stock: number }[] = [];
-  const lines: { productId: string; name: string; qty: number; unitPricePaise: number }[] = [];
+  const outOfStock: OutOfStockLine[] = [];
+  const lines: PricingLine[] = [];
   let subtotalPaise = 0;
 
-  for (const line of items) {
-    const product = getProduct(line.productId);
+  for (const item of items) {
+    const product = getProduct(item.productId);
+
     if (!product) {
-      unknownIds.push(line.productId);
+      unknownIds.push(item.productId);
       continue;
     }
 
+    const qty = item.qty;
     const unitPricePaise = product.pricePaise;
-    const qty = line.qty;
 
     if (qty > product.stock) {
-      outOfStock.push({ productId: line.productId, stock: product.stock });
+      outOfStock.push({ productId: item.productId, stock: product.stock });
     }
 
-    subtotalPaise += unitPricePaise * qty;
-
+    subtotalPaise += qty * unitPricePaise;
     lines.push({
-      productId: line.productId,
+      productId: item.productId,
       name: product.name,
       qty,
       unitPricePaise,

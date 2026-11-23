@@ -15,8 +15,16 @@ export const CreateOrderSchema = z.object({
     .trim()
     .min(5, "Address must be at least 5 characters")
     .max(120, "Address must be at most 120 characters"),
-  city: z.string().trim().min(2, "City must be at least 2 characters").max(60, "City must be at most 60 characters"),
-  state: z.string().trim().min(2, "State must be at least 2 characters").max(60, "State must be at most 60 characters"),
+  city: z
+    .string()
+    .trim()
+    .min(2, "City must be at least 2 characters")
+    .max(60, "City must be at most 60 characters"),
+  state: z
+    .string()
+    .trim()
+    .min(2, "State must be at least 2 characters")
+    .max(60, "State must be at most 60 characters"),
   pincode: z
     .string()
     .regex(/^[1-9]\d{5}$/, "Pincode must be 6 digits starting with 1-9"),
@@ -25,7 +33,7 @@ export const CreateOrderSchema = z.object({
       z.object({
         productId: z.string().min(1, "Product ID is required"),
         qty: z.number().int().min(1).max(10, "Quantity must be at most 10"),
-      })
+      }),
     )
     .min(1, "Must have at least 1 item")
     .max(20, "Maximum 20 items allowed"),

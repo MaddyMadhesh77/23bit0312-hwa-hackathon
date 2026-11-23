@@ -3,7 +3,6 @@ import { ensureOrdersTable } from "@/lib/db";
 import { CreateOrderSchema } from "@/lib/order-schema";
 import { computeTotals } from "@/lib/pricing";
 import { customAlphabet } from "nanoid";
-import { PRODUCTS } from "@/lib/products";
 
 const ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
 const customNanoid = customAlphabet(ALPHABET, 6);
@@ -94,7 +93,7 @@ export async function POST(request: Request) {
       ) VALUES (
         ${code}, ${validated.name}, ${validated.email}, ${validated.phone},
         ${validated.address_line1}, ${validated.city}, ${validated.state}, ${validated.pincode},
-        ${JSON.stringify(validated.items)}, ${subtotalPaise}, ${shippingPaise}, ${totalPaise},
+        ${JSON.stringify(totals.lines)}, ${subtotalPaise}, ${shippingPaise}, ${totalPaise},
         'confirmed', ${idempotencyKey}
       )
     `;
