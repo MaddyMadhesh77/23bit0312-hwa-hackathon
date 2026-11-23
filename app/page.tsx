@@ -131,6 +131,37 @@ export default function Home() {
           </table>
         </div>
       </section>
+
+      <section className="max-w-5xl mx-auto px-4 pb-16">
+        <h2 className="text-3xl md:text-4xl font-bold">Built for real dogs</h2>
+
+        <div className="mt-8 grid sm:grid-cols-3 gap-4">
+          <div className="rounded-2xl border border-ink/10 bg-white/60 p-5">
+            <p className="font-semibold text-ink">Food-safe silicone & TPE</p>
+          </div>
+          <div className="rounded-2xl border border-ink/10 bg-white/60 p-5">
+            <p className="font-semibold text-ink">
+              Top-rack dishwasher safe
+            </p>
+          </div>
+          <div className="rounded-2xl border border-ink/10 bg-white/60 p-5">
+            <p className="font-semibold text-ink">Steel-reinforced base</p>
+          </div>
+        </div>
+
+        <p className="mt-6 text-sm text-muted">
+          Supervise first use. Not a chew toy.
+        </p>
+      </section>
+
+      <section className="bg-primary text-center py-16 rounded-3xl mx-4">
+        <h2 className="text-3xl md:text-4xl font-bold text-white">
+          Ready for calmer afternoons?
+        </h2>
+        <Link href="/product" className="btn btn-primary mt-8">
+          Shop TickTail
+        </Link>
+      </section>
     </>
   );
 }
