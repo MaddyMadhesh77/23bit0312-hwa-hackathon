@@ -84,6 +84,47 @@ export default function CheckoutPage() {
     setFormErrors((P) => ({ ...P, [n]: "" }));
   };
 
+  const hSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!okForm()) return;
+    if (!idempotencyKeyRef.current) idempotencyKeyRef.current = crypto.randomUUID();
+    const K = idempotencyKeyRef.current;
+    setSubmitState("submitting");
+    setServerError(null);
+    try {
+      const R = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: values.name,
+          email: values.email,
+          phone: values.phone,
+          address_line1: values.address_line1,
+          city: values.city,
+          state: values.state,
+          pincode: values.pincode,
+          items: cartItems.map((c) => ({ productId: c.item.productId, qty: c.item.qty })),
+          idempotencyKey: K,
+        }),
+      });
+      /* typescript-ignore */
+      if (R.ok) {
+        clearCart();
+        window.location.href = "/order/confirmed?new=1";
+        setSubmitState("success");
+      } else if (R.status === 409) {
+        setServerError("Some items just went out of stock — review your cart.");
+        setSubmitState("error");
+      } else {
+        setServerError("Something went wrong — please try again.");
+        setSubmitState("error");
+      }
+    } catch (e) {
+      setServerError("Something went wrong — please try again.");
+      setSubmitState("error");
+    }
+  };
+
   if (!items || items.length === 0 || !rawCart) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4 pb-12">
@@ -102,7 +143,7 @@ export default function CheckoutPage() {
         <div className="grid lg:grid-cols-2 gap-8 items-start">
           <div>
             <h2 className="text-2xl font-display font-semibold text-ink mb-6">Order Details</h2>
-            <form className="space-y-6">
+            <form onSubmit={hSubmit} className="space-y-6">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-1">Name</label>
                 <input id="name" name="name" type="text" value={values.name} onChange={hChange} required className="w-full rounded-2xl border border-ink/15 bg-white px-4 py-3 transition-colors focus:outline-none focus:border-primary sm:text-sm" />
