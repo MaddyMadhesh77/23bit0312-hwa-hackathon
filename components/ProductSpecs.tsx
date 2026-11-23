@@ -31,6 +31,17 @@ export default function ProductSpecs() {
           if your dog starts chewing the shell.
         </p>
       </div>
+
+      <div className="rounded-2xl border bg-white/60 p-4 sm:col-span-2">
+        <h3 className="font-semibold">How the mechanism works</h3>
+        <p className="text-sm text-muted">
+          One wind stores energy in a mainspring — the same mechanism as a kitchen
+          timer, only geared for hours instead of minutes. A governor and escapement
+          meter that energy out at a steady rate, releasing one chamber roughly every
+          45–60 minutes until all six are open. No batteries, no electronics, nothing
+          to charge.
+        </p>
+      </div>
     </div>
   );
 }
