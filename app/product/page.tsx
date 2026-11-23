@@ -13,6 +13,13 @@ export default function ProductPage() {
   const kits = PRODUCTS.filter((product) => product.kind === "kit");
   const selected = kits[0];
 
+  // Determine progress based on active engagement timeline segment
+  // segment 1 of 6 → 0/6, segment 2 of 6 → 1/6, segment 3 of 6 → 2/6 = 0.5, etc.
+  // We'll derive this from localStorage or default to 0
+  const storedSeg = localStorage.getItem("ticktail_engaged");
+  const activeSegment = storedSeg ? parseInt(storedSeg, 10) : 1;
+  const progress = activeSegment / 6;
+
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
       <p className="text-sm font-medium uppercase tracking-[0.18em] text-primary">
@@ -27,6 +34,8 @@ export default function ProductPage() {
       </p>
 
       <ProductBuy kits={kits} />
+
+      {/* 3D Tower Scene - driven by engagement timeline */}
 
       {/* Specs section */}
       <section className="mt-12 space-y-6">
@@ -70,102 +79,6 @@ export default function ProductPage() {
 
       {/* Engagement timeline */}
       <EngagementTimeline />
-
-      {/* FAQ accordion */}
-      <section className="mt-12">
-        <h2 className="font-display text-2xl font-semibold text-ink mb-4">Frequently asked questions</h2>
-        <div className="space-y-2">
-          {/* Is it really battery-free? */}
-          <button
-            aria-expanded="true"
-            className="w-full text-left justify-between align-items-center rounded-2xl bg-bg p-4 hover:bg-bg/80 transition-colors font-medium text-ink"
-          >
-            Is it really battery-free?
-            <svg
-              className="w-4 h-4 rotate-180 transition-transform duration-200"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M7 10l5 5 5-5M7 15l5-5 5-5M7 20l5-5 5-5" />
-            </svg>
-          </button>
-          <div className="hidden bg-white rounded-xl p-4 mt-1 text-muted">
-            Yes. TickTail uses a wind-up clockwork mechanism — no batteries, no apps, no electronics. Just pure mechanical engagement that delivers six puzzle experiences over six hours.
-          </div>
-
-          {/* What treats can I use? */}
-          <button
-            aria-expanded="false"
-            className="w-full text-left justify-between align-items-center rounded-2xl bg-bg p-4 hover:bg-bg/80 transition-colors font-medium text-ink"
-          >
-            What treats can I use?
-            <svg
-              className="w-4 h-4 rotate-0 transition-transform duration-200"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M7 10l5 5 5-5M7 15l5-5 5-5M7 20l5-5 5-5" />
-            </svg>
-          </button>
-          <div className="hidden bg-white rounded-xl p-4 mt-1 text-muted">
-            Dry treats only. Use small, dry kibble or treats that can fit through the collar opening. Avoid soft or moist treats that could clog the mechanism.
-          </div>
-
-          {/* Is it chew-proof? */}
-          <button
-            aria-expanded="false"
-            className="w-full text-left justify-between align-items-center rounded-2xl bg-bg p-4 hover:bg-bg/80 transition-colors font-medium text-ink"
-          >
-            Is it chew-proof?
-            <svg
-              className="w-4 h-4 rotate-0 transition-transform duration-200"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M7 10l5 5 5-5M7 15l5-5 5-5M7 20l5-5 5-5" />
-            </svg>
-          </button>
-          <div className="hidden bg-white rounded-xl p-4 mt-1 text-muted">
-            No — it is not chew-proof. Supervise first use. If chewing starts, remove the collar and contact support@ticktail.in. The mechanism is designed for engagement, not destructive chewing.
-          </div>
-
-          {/* How do I clean it? */}
-          <button
-            aria-expanded="false"
-            className="w-full text-left justify-between align-items-center rounded-2xl bg-bg p-4 hover:bg-bg/80 transition-colors font-medium text-ink"
-          >
-            How do I clean it?
-            <svg
-              className="w-4 h-4 rotate-0 transition-transform duration-200"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M7 10l5 5 5-5M7 15l5-5 5-5M7 20l5-5 5-5" />
-            </svg>
-          </button>
-          <div className="hidden bg-white rounded-xl p-4 mt-1 text-muted">
-            The collar is top-rack dishwasher safe. Remove the electronic components (none — it's mechanical) and wash on the top rack. Wipe the exterior with a damp cloth and mild soap. Allow to air dry completely before use.
-          </div>
-
-          {/* Which size should I pick? */}
-          <button
-            aria-expanded="false"
-            className="w-full text-left justify-between align-items-center rounded-2xl bg-bg p-4 hover:bg-bg/80 transition-colors font-medium text-ink"
-          >
-            Which size should I pick?
-            <svg
-              className="w-4 h-4 rotate-0 transition-transform duration-200"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M7 10l5 5 5-5M7 15l5-5 5-5M7 20l5-5 5-5" />
-            </svg>
-          </button>
-          <div className="hidden bg-white rounded-xl p-4 mt-1 text-muted">
-            Measure your dog's weight. Small (S): 5–12 kg, Medium (M): 12–25 kg, Large (L): 25–45 kg. Each kit size fits its weight range. Not sure? Visit /planner for a personalised recommendation based on your dog's weight and energy level.
-          </div>
-        </div>
-      </section>
     </div>
   );
 }
