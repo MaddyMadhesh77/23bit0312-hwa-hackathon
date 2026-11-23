@@ -217,18 +217,24 @@ export default function ProductBuy({ kits }: ProductBuyProps) {
           </p>
         )}
 
-        <div className="mt-7 flex items-center justify-between gap-3">
-          <div>
-            <span className="text-sm text-muted">Total</span>
-            <p className="text-2xl font-bold text-ink">
-              {formatINR(
-                (selectedKit.pricePaise +
-                  (mode === "sub" ? refillIntro.pricePaise : 0)) *
-                  qty,
-              )}
-            </p>
+        <div className="mt-7">
+          <span className="text-sm text-muted">Total</span>
+          <p className="text-2xl font-bold text-ink">
+            {formatINR(
+              (selectedKit.pricePaise +
+                (mode === "sub" ? refillIntro.pricePaise : 0)) *
+                qty,
+            )}
+          </p>
+          <div className="mt-2">
+            {selectedKit.stock >= 10 ? (
+              <span className="text-sm text-success">In stock</span>
+            ) : (
+              <span className="rounded-full bg-accent/20 px-2 py-0.5 text-xs font-semibold text-ink">
+                Only {selectedKit.stock} left
+              </span>
+            )}
           </div>
-          <StockBadge stock={selectedKit.stock} />
         </div>
 
         <div className="mt-6">
