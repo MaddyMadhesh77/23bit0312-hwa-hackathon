@@ -57,9 +57,30 @@ const TRAY_TIPS: Record<string, string> = {
   "Lick-and-twist cup": "A textured cup that dispenses treats when licked.",
 };
 
+const DEFAULT_WEIGHT_KG = 15;
+const MIN_WEIGHT_KG = 2;
+const MAX_WEIGHT_KG = 60;
+const MIN_HOURS_ALONE = 1;
+const MAX_HOURS_ALONE = 10;
+const MAX_CHAMBERS = 6;
+
+export function normalizeWeightKg(weightKg: number): number {
+  if (!Number.isFinite(weightKg) || weightKg <= 0) return DEFAULT_WEIGHT_KG;
+
+  return Math.min(MAX_WEIGHT_KG, Math.max(MIN_WEIGHT_KG, weightKg));
+}
+
+export function normalizeHoursAlone(hoursAlone: number): number {
+  if (!Number.isFinite(hoursAlone)) return MIN_HOURS_ALONE;
+
+  return Math.min(MAX_HOURS_ALONE, Math.max(MIN_HOURS_ALONE, hoursAlone));
+}
+
 export function recommendSize(weightKg: number): PlannerSize {
-  if (weightKg < 12) return "S";
-  if (weightKg <= 25) return "M";
+  const normalizedWeight = normalizeWeightKg(weightKg);
+
+  if (normalizedWeight < 12) return "S";
+  if (normalizedWeight < 25) return "M";
   return "L";
 }
 
@@ -68,19 +89,24 @@ export function planSession(
   energy: Energy,
   hoursAlone: number,
 ): CompatibleSessionPlan {
-  const size = recommendSize(weightKg);
-  const chamberCount = Math.min(6, Math.max(1, Math.round(hoursAlone)));
-  const trays = TRAY_ORDERS[energy];
+  const normalizedWeight = normalizeWeightKg(weightKg);
+  const normalizedHours = normalizeHoursAlone(hoursAlone);
+  const size = recommendSize(normalizedWeight);
+  const chamberCount = Math.min(
+    MAX_CHAMBERS,
+    Math.max(1, Math.round(normalizedHours)),
+  );
+  const trays = TRAY_ORDERS[energy] ?? TRAY_ORDERS.medium;
   const chambers: Chamber[] = trays.slice(0, chamberCount).map((tray, index) => ({
     hour: index + 1,
     tray,
   }));
   const notes: string[] = [];
 
-  if (weightKg > 45) {
+  if (normalizedWeight > 45) {
     notes.push("Size L — supervise closely, this is a strong chewer range.");
   }
-  if (hoursAlone > 6) {
+  if (normalizedHours > 6) {
     notes.push("Refill midday for full-day coverage.");
   }
 

@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import { useCart } from "@/lib/cart";
-import { planSession, type Energy } from "@/lib/planner";
+import {
+  normalizeHoursAlone,
+  normalizeWeightKg,
+  planSession,
+  type Energy,
+} from "@/lib/planner";
 import { PRODUCTS, formatINR } from "@/lib/products";
 
 const ENERGY_OPTIONS: { label: string; value: Energy }[] = [
@@ -24,7 +29,15 @@ export default function DogPlanner() {
       )
     : undefined;
 
+  const isWeightValid =
+    Number.isFinite(weightKg) && weightKg >= 2 && weightKg <= 60;
+  const isHoursValid =
+    Number.isFinite(hoursAlone) && hoursAlone >= 1 && hoursAlone <= 10;
+  const isFormValid = isWeightValid && isHoursValid;
+
   const handlePlan = () => {
+    if (!isFormValid) return;
+
     setPlan(planSession(weightKg, energy, hoursAlone));
   };
 
@@ -53,9 +66,7 @@ export default function DogPlanner() {
               max={60}
               value={weightKg}
               onChange={(event) =>
-                setWeightKg(
-                  Math.min(60, Math.max(2, Number(event.target.value))),
-                )
+                setWeightKg(normalizeWeightKg(Number(event.target.value)))
               }
               className="mt-2 w-full rounded-2xl border border-ink/15 bg-bg px-4 py-3 text-ink focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
@@ -109,7 +120,9 @@ export default function DogPlanner() {
               min={1}
               max={10}
               value={hoursAlone}
-              onChange={(event) => setHoursAlone(Number(event.target.value))}
+              onChange={(event) =>
+                setHoursAlone(normalizeHoursAlone(Number(event.target.value)))
+              }
               className="mt-5 w-full accent-primary"
             />
             <div className="mt-1 flex justify-between text-xs text-muted">
@@ -119,7 +132,18 @@ export default function DogPlanner() {
           </div>
         </div>
 
-        <button type="button" onClick={handlePlan} className="btn btn-primary mt-8">
+        {!isFormValid && (
+          <p className="mt-4 text-sm text-error" role="alert">
+            Enter a weight between 2 and 60 kg and choose 1–10 hours alone.
+          </p>
+        )}
+
+        <button
+          type="button"
+          onClick={handlePlan}
+          disabled={!isFormValid}
+          className="btn btn-primary mt-8"
+        >
           Plan my dog&apos;s day
         </button>
       </section>
