@@ -1,26 +1,23 @@
 "use client";
 
-import { useContext, useRef, useState } from "react";
 import Link from "next/link";
-import { CartContext } from "@/lib/cart";
+import { useState, type ChangeEvent } from "react";
+import { z } from "zod";
+import { useCart } from "@/lib/cart";
 import { CreateOrderSchema } from "@/lib/order-schema";
-import { formatINR, getProduct } from "@/lib/products";
+import { PRODUCTS, formatINR } from "@/lib/products";
+
+type CheckoutFormValues = Pick<
+  z.infer<typeof CreateOrderSchema>,
+  "name" | "email" | "phone" | "address_line1" | "city" | "state" | "pincode"
+>;
+
+const inputClass =
+  "mt-2 w-full rounded-2xl border border-ink/15 bg-white px-4 py-3 text-sm text-ink transition-colors placeholder:text-muted/60 focus:border-primary focus:outline-none";
 
 export default function CheckoutPage() {
-  const { items, clearCart } = useContext(CartContext) || {};
-  const [serverError, setServerError] = useState<string | null>(null);
-  const [submitState, setSubmitState] = useState<"idle" | "submitting" | "success" | "error">("idle");
-
-  const idempotencyKeyRef = useRef<string | null>(null);
-  const [values, setValues] = useState<{
-    name: string;
-    email: string;
-    phone: string;
-    address_line1: string;
-    city: string;
-    state: string;
-    pincode: string;
-  }>({
+  const { items, clearCart } = useCart();
+  const [values, setValues] = useState<CheckoutFormValues>({
     name: "",
     email: "",
     phone: "",
@@ -29,184 +26,230 @@ export default function CheckoutPage() {
     state: "",
     pincode: "",
   });
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  const rawCart = (items || []).map((it) => {
-    const prod = getProduct(it.productId);
-    return prod ? { item: it, product: prod } : null;
-  }).filter(Boolean);
-
-  if (!items || items.length === 0 || !rawCart) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4 pb-12">
-        <div className="text-center">
-          <p className="text-2xl font-medium text-muted mb-4">Your cart is empty</p>
-          <p className="text-muted">Your cart is empty — meet TickTail</p>
-          <Link href="/product" className="btn btn-primary mt-6">Browse Products</Link>
-        </div>
-      </div>
+  const cartLines = items.flatMap((item) => {
+    const product = PRODUCTS.find(
+      (candidate) => candidate.id === item.productId,
     );
-  }
 
-  const cartItems = rawCart as Array<{ item: any; product: any }>;
-  const subtotal = cartItems.reduce((t, { item, product }) => t + product.pricePaise * item.qty, 0);
-  const shipping = subtotal >= 99_900 ? 0 : 7_900;
-  const total = subtotal + shipping;
-  const shipText = subtotal >= 99_900 ? "Free" : "₹79";
+    return product ? [{ item, product }] : [];
+  });
 
-  const okForm = () => {
-    const F = {
-      name: values.name,
-      email: values.email,
-      phone: values.phone,
-      address_line1: values.address_line1,
-      city: values.city,
-      state: values.state,
-      pincode: values.pincode,
-      items: cartItems.map((c) => ({ productId: c.item.productId, qty: c.item.qty })),
-      idempotencyKey: idempotencyKeyRef.current ?? "",
-    };
-    const R = CreateOrderSchema.safeParse(F);
-    if (!R.success) {
-      const E: Record<string, string> = {};
-      R.error.issues.forEach((i) => { E[i.path.join(".")] = i.message; });
-      setFormErrors(E);
-      setSubmitState("idle");
-      return false;
-    }
-    setFormErrors({});
-    return true;
+  const subtotalPaise = cartLines.reduce(
+    (subtotal, { item, product }) =>
+      subtotal + product.pricePaise * item.qty,
+    0,
+  );
+  const shippingPaise = subtotalPaise >= 99900 ? 0 : 7900;
+  const totalPaise = subtotalPaise + shippingPaise;
+
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
+    setValues((current) => ({ ...current, [name]: value }));
   };
 
-  const hChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { value, name: n } = e.target;
-    setValues((p) => ({ ...p, [n]: value }));
-    setFormErrors((P) => ({ ...P, [n]: "" }));
-  };
-
-  const hSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!okForm()) return;
-    if (!idempotencyKeyRef.current) idempotencyKeyRef.current = crypto.randomUUID();
-    const K = idempotencyKeyRef.current;
-    setSubmitState("submitting");
-    setServerError(null);
-    try {
-      const R = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: values.name,
-          email: values.email,
-          phone: values.phone,
-          address_line1: values.address_line1,
-          city: values.city,
-          state: values.state,
-          pincode: values.pincode,
-          items: cartItems.map((c) => ({ productId: c.item.productId, qty: c.item.qty })),
-          idempotencyKey: K,
-        }),
-      });
-      /* typescript-ignore */
-      if (R.ok) {
-        clearCart?.();
-        window.location.href = "/order/confirmed?new=1";
-        setSubmitState("success");
-      } else if (R.status === 409) {
-        setServerError("Some items just went out of stock — review your cart.");
-        setSubmitState("error");
-      } else {
-        setServerError("Something went wrong — please try again.");
-        setSubmitState("error");
-      }
-    } catch (e) {
-      setServerError("Something went wrong — please try again.");
-      setSubmitState("error");
-    }
-  };
-
-  if (!items || items.length === 0 || !rawCart) {
+  if (items.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4 pb-12">
-        <div className="text-center">
-          <p className="text-2xl font-medium text-muted mb-4">Your cart is empty</p>
-          <p className="text-muted">Your cart is empty — meet TickTail</p>
-          <Link href="/product" className="btn btn-primary mt-6">Browse Products</Link>
-        </div>
+      <div className="mx-auto max-w-3xl px-4 py-16 text-center">
+        <h1 className="font-display text-3xl font-semibold text-ink">
+          Your cart is empty
+        </h1>
+        <p className="mt-3 text-muted">
+          Your cart is empty — meet TickTail
+        </p>
+        <Link
+          href="/product"
+          onClick={clearCart}
+          className="btn btn-primary mt-6"
+        >
+          Browse products
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-bg p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="grid lg:grid-cols-2 gap-8 items-start">
-          <div>
-            <h2 className="text-2xl font-display font-semibold text-ink mb-6">Order Details</h2>
-            <form onSubmit={hSubmit} className="space-y-6">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-1">Name</label>
-                <input id="name" name="name" type="text" value={values.name} onChange={hChange} required className="w-full rounded-2xl border border-ink/15 bg-white px-4 py-3 transition-colors focus:outline-none focus:border-primary sm:text-sm" />
-                {formErrors.name && <p className="mt-1 text-sm text-error">{formErrors.name}</p>}
-              </div>
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-1">Email</label>
-                <input id="email" name="email" type="email" value={values.email} onChange={hChange} required className="w-full rounded-2xl border border-ink/15 bg-white px-4 py-3 transition-colors focus:outline-none focus:border-primary sm:text-sm" />
-                {formErrors.email && <p className="mt-1 text-sm text-error">{formErrors.email}</p>}
-              </div>
-              <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-1">Phone</label>
-                <input id="phone" name="phone" type="tel" value={values.phone} onChange={hChange} required className="w-full rounded-2xl border border-ink/15 bg-white px-4 py-3 transition-colors focus:outline-none focus:border-primary sm:text-sm" />
-                {formErrors.phone && <p className="mt-1 text-sm text-error">{formErrors.phone}</p>}
-              </div>
-              <div>
-                <label htmlFor="address_line1" className="block text-sm font-medium text-1">Address Line 1</label>
-                <input id="address_line1" name="address_line1" type="text" value={values.address_line1} onChange={hChange} required className="w-full rounded-2xl border border-ink/15 bg-white px-4 py-3 transition-colors focus:outline-none focus:border-primary sm:text-sm" />
-                {formErrors.address_line1 && <p className="mt-1 text-sm text-error">{formErrors.address_line1}</p>}
-              </div>
-              <div>
-                <label htmlFor="city" className="block text-sm font-medium text-1">City</label>
-                <input id="city" name="city" type="text" value={values.city} onChange={hChange} required className="w-full rounded-2xl border border-ink/15 bg-white px-4 py-3 transition-colors focus:outline-none focus:border-primary sm:text-sm" />
-                {formErrors.city && <p className="mt-1 text-sm text-error">{formErrors.city}</p>}
-              </div>
-              <div>
-                <label htmlFor="state" className="block text-sm font-medium text-1">State</label>
-                <input id="state" name="state" type="text" value={values.state} onChange={hChange} required className="w-full rounded-2xl border border-ink/15 bg-white px-4 py-3 transition-colors focus:outline-none focus:border-primary sm:text-sm" />
-                {formErrors.state && <p className="mt-1 text-sm text-error">{formErrors.state}</p>}
-              </div>
-              <div>
-                <label htmlFor="pincode" className="block text-sm font-medium text-1">Pincode</label>
-                <input id="pincode" name="pincode" type="text" value={values.pincode} onChange={hChange} required className="w-full rounded-2xl border border-ink/15 bg-white px-4 py-3 transition-colors focus:outline-none focus:border-primary sm:text-sm" />
-                {formErrors.pincode && <p className="mt-1 text-sm text-error">{formErrors.pincode}</p>}
-              </div>
-              <button type="submit" disabled={submitState !== "idle"} className="w-full rounded-2xl bg-primary py-3 px-4 text-white font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                {submitState === "submitting" ? "Placing order…" : "Place Order"}
-              </button>
-            </form>
-          </div>
-          <div>
-            <h2 className="text-2xl font-display font-semibold text-ink">Order Summary</h2>
-            <div className="border rounded-2xl p-5 bg-white">
-              <ul className="space-y-3 text-left">
-                {cartItems.map(({ item, product }) => (
-                  <li key={product.id} className="flex items-baseline justify-between">
-                    <div className="flex items-center gap-3">
-                      <img src={product.image} alt={product.name} className="h-12 w-12 rounded-2xl object-cover" />
-                      <div>
-                        <p className="font-medium text-ink truncate">{product.name}</p>
-                        <p className="text-xs text-muted">Qty: {item.qty}</p>
-                      </div>
-                    </div>
-                    <span className="font-semibold text-ink">{formatINR(product.pricePaise * item.qty)}</span>
-                  </li>
-                ))}
-                <li><span className="font-medium text-ink">Subtotal</span><span className="font-semibold text-ink">{formatINR(subtotal)}</span></li>
-                <li><span className="font-medium text-ink">Shipping</span><span className="font-semibold text-ink">{shipText}</span></li>
-                <li className="border-t pt-4 flex items-baseline justify-between"><span>Total</span><strong className="text-2xl font-bold text-ink">{formatINR(total)}</strong></li>
-              </ul>
+    <div className="mx-auto max-w-6xl px-4 py-8">
+      <div className="grid items-start gap-8 lg:grid-cols-2">
+        <section>
+          <h1 className="font-display text-3xl font-semibold text-ink">
+            Checkout
+          </h1>
+
+          <form className="mt-6 space-y-5">
+            <div>
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-ink"
+              >
+                Name
+              </label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                value={values.name}
+                onChange={handleChange}
+                className={inputClass}
+              />
+              <p className="text-sm text-error"></p>
             </div>
+
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-ink"
+              >
+                Email
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                value={values.email}
+                onChange={handleChange}
+                className={inputClass}
+              />
+              <p className="text-sm text-error"></p>
+            </div>
+
+            <div>
+              <label
+                htmlFor="phone"
+                className="block text-sm font-medium text-ink"
+              >
+                Phone
+              </label>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                value={values.phone}
+                onChange={handleChange}
+                className={inputClass}
+              />
+              <p className="text-sm text-error"></p>
+            </div>
+
+            <div>
+              <label
+                htmlFor="address_line1"
+                className="block text-sm font-medium text-ink"
+              >
+                Address line 1
+              </label>
+              <input
+                id="address_line1"
+                name="address_line1"
+                type="text"
+                value={values.address_line1}
+                onChange={handleChange}
+                className={inputClass}
+              />
+              <p className="text-sm text-error"></p>
+            </div>
+
+            <div>
+              <label
+                htmlFor="city"
+                className="block text-sm font-medium text-ink"
+              >
+                City
+              </label>
+              <input
+                id="city"
+                name="city"
+                type="text"
+                value={values.city}
+                onChange={handleChange}
+                className={inputClass}
+              />
+              <p className="text-sm text-error"></p>
+            </div>
+
+            <div>
+              <label
+                htmlFor="state"
+                className="block text-sm font-medium text-ink"
+              >
+                State
+              </label>
+              <input
+                id="state"
+                name="state"
+                type="text"
+                value={values.state}
+                onChange={handleChange}
+                className={inputClass}
+              />
+              <p className="text-sm text-error"></p>
+            </div>
+
+            <div>
+              <label
+                htmlFor="pincode"
+                className="block text-sm font-medium text-ink"
+              >
+                Pincode
+              </label>
+              <input
+                id="pincode"
+                name="pincode"
+                type="text"
+                inputMode="numeric"
+                value={values.pincode}
+                onChange={handleChange}
+                className={inputClass}
+              />
+              <p className="text-sm text-error"></p>
+            </div>
+          </form>
+        </section>
+
+        <aside>
+          <h2 className="font-display text-2xl font-semibold text-ink">
+            Order summary
+          </h2>
+
+          <div className="mt-5 rounded-3xl border border-ink/10 bg-white p-5 sm:p-6">
+            <ul className="space-y-4">
+              {cartLines.map(({ item, product }) => (
+                <li
+                  key={product.id}
+                  className="flex items-baseline justify-between gap-4"
+                >
+                  <p className="text-sm text-ink">
+                    {product.name} × {item.qty}
+                  </p>
+                  <p className="shrink-0 text-sm font-medium text-ink">
+                    {formatINR(product.pricePaise * item.qty)}
+                  </p>
+                </li>
+              ))}
+            </ul>
+
+            <dl className="mt-6 space-y-3 border-t border-ink/10 pt-5 text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted">Subtotal</dt>
+                <dd className="font-medium text-ink">
+                  {formatINR(subtotalPaise)}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted">Shipping</dt>
+                <dd className="font-medium text-ink">
+                  {shippingPaise === 0 ? "Free" : formatINR(shippingPaise)}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4 border-t border-ink/10 pt-4 text-base">
+                <dt className="font-bold text-ink">Total</dt>
+                <dd className="font-bold text-ink">
+                  {formatINR(totalPaise)}
+                </dd>
+              </div>
+            </dl>
           </div>
-        </div>
+        </aside>
       </div>
     </div>
   );
