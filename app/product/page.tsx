@@ -1,5 +1,6 @@
 import EngagementTimeline from "@/components/EngagementTimeline";
 import ProductBuy from "@/components/ProductBuy";
+import ProductSpecs from "@/components/ProductSpecs";
 import { PRODUCTS } from "@/lib/products";
 
 export default function ProductPage() {
@@ -14,6 +15,8 @@ export default function ProductPage() {
       <ProductBuy kits={kits} />
       <h2 className="text-2xl font-bold mt-12">Six hours of play, unlocked</h2>
       <EngagementTimeline />
+      <h2 className="text-2xl font-bold mt-12">Specs & safety</h2>
+      <ProductSpecs />
     </div>
   );
 }
