@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useCart } from "@/lib/cart";
-import { formatINR } from "@/lib/products";
+import { formatINR, getProduct } from "@/lib/products";
 import type { Product } from "@/lib/products";
 
 type ProductBuyProps = {
@@ -23,9 +23,11 @@ export default function ProductBuy({ kits }: ProductBuyProps) {
   const { addItem, openDrawer } = useCart();
   const [selectedKit, setSelectedKit] = useState<Product>(kits[0]);
   const [qty, setQty] = useState(1);
+  const [mode, setMode] = useState<"once" | "sub">("once");
   const [activeImage, setActiveImage] = useState(0);
   const [added, setAdded] = useState(false);
   const addedTimer = useRef<number | null>(null);
+  const refillIntro = getProduct("refill-intro")!;
 
   useEffect(() => {
     return () => {
@@ -41,6 +43,9 @@ export default function ProductBuy({ kits }: ProductBuyProps) {
 
   function handleAddToCart() {
     addItem(selectedKit.id, qty);
+    if (mode === "sub") {
+      addItem("refill-intro", qty);
+    }
     openDrawer();
     setAdded(true);
 
@@ -157,10 +162,49 @@ export default function ProductBuy({ kits }: ProductBuyProps) {
           </div>
         </div>
 
+        <div className="flex gap-1 rounded-2xl border border-muted/40 p-1">
+          <button
+            type="button"
+            onClick={() => setMode("once")}
+            aria-pressed={mode === "once"}
+            className={
+              mode === "once"
+                ? "flex-1 rounded-xl bg-primary px-4 py-2 font-semibold text-white"
+                : "flex-1 rounded-xl px-4 py-2 text-muted"
+            }
+          >
+            One-time
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("sub")}
+            aria-pressed={mode === "sub"}
+            className={
+              mode === "sub"
+                ? "flex-1 rounded-xl bg-primary px-4 py-2 font-semibold text-white"
+                : "flex-1 rounded-xl px-4 py-2 text-muted"
+            }
+          >
+            Kit + monthly refills
+          </button>
+        </div>
+
+        {mode === "sub" && (
+          <p className="mt-3 text-sm text-muted">
+            First refill ₹{refillIntro.pricePaise / 100} — usually{" "}
+            <span className="line-through">₹399</span>, 15% off. Then ₹399/month,
+            cancel anytime.
+          </p>
+        )}
+
         <div className="mt-7">
           <span className="text-sm text-muted">Total</span>
           <p className="text-2xl font-bold text-ink">
-            {formatINR(selectedKit.pricePaise * qty)}
+            {formatINR(
+              (selectedKit.pricePaise +
+                (mode === "sub" ? refillIntro.pricePaise : 0)) *
+                qty,
+            )}
           </p>
         </div>
 
