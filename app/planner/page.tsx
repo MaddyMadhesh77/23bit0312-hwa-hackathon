@@ -1,22 +1,18 @@
-"use client";
-
 import DogPlanner from "@/components/DogPlanner";
-import Link from "next/link";
 
 export default function PlannerPage() {
   return (
-    <main className="flex-1 bg-bg p-4 md:p-8">
-      <div className="max-w-2xl mx-auto">
+    <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 sm:py-14">
+      <h1 className="font-display text-4xl font-semibold text-ink sm:text-5xl">
+        TickTail Planner
+      </h1>
+      <p className="mt-4 max-w-2xl leading-relaxed text-muted">
+        Tell us about your dog and build a calm, engaging session for the hours
+        they spend alone.
+      </p>
+      <div className="mt-10">
         <DogPlanner />
-        <div className="mt-8 text-center">
-          <Link
-            href="/"
-            className="btn btn-primary"
-          >
-            Back home
-          </Link>
-        </div>
       </div>
-    </main>
-  )
+    </div>
+  );
 }

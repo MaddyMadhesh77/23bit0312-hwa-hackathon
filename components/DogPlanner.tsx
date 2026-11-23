@@ -1,220 +1,188 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { formatINR } from "@/lib/products";
-import {
-  planSession,
-  recommendSize,
-  sizeDisplayText,
-  sizeProductId,
-  sizeWeightRange,
-  Energy,
-} from "@/lib/planner";
+import { useCart } from "@/lib/cart";
+import { planSession, type Energy } from "@/lib/planner";
+import { PRODUCTS, formatINR } from "@/lib/products";
 
-type EnergyBtn = "couch" | "balanced" | "zoomies";
+const ENERGY_OPTIONS: { label: string; value: Energy }[] = [
+  { label: "Couch potato", value: "low" },
+  { label: "Balanced", value: "medium" },
+  { label: "Zoomies", value: "high" },
+];
 
-const ENERGY_LABELS: Record<EnergyBtn, string> = {
-  couch: "Couch potato",
-  balanced: "Balanced",
-  zoomies: "Zoomies",
-};
+export default function DogPlanner() {
+  const { addItem, openDrawer } = useCart();
+  const [weightKg, setWeightKg] = useState(15);
+  const [energy, setEnergy] = useState<Energy>("medium");
+  const [hoursAlone, setHoursAlone] = useState(4);
+  const [plan, setPlan] = useState<ReturnType<typeof planSession> | null>(null);
 
-const ENERGY_COLORS: Record<EnergyBtn, string> = {
-  couch: "bg-bg/50 text-muted hover:text-ink",
-  balanced: "bg-bg hover:text-ink",
-  zoomies: "bg-primary/20 text-primary hover:bg-primary/30",
-};
+  const recommendedProduct = plan
+    ? PRODUCTS.find(
+        (product) => product.id === `ticktail-${plan.size.toLowerCase()}`,
+      )
+    : undefined;
 
-export type PlanSessionResult = ReturnType<typeof planSession>;
-
-interface ChamberSegment {
-  hour: number;
-  tray: string;
-  tip: string;
-}
-
-interface DogPlannerProps {
-  defaultWeight?: number;
-  defaultEnergy?: EnergyBtn;
-  defaultHours?: number;
-}
-
-export default function DogPlanner({
-  defaultWeight = 15,
-  defaultEnergy = "balanced",
-  defaultHours = 4,
-}: DogPlannerProps) {
-  const [weightKg, setWeightKg] = useState<number>(defaultWeight);
-  const [energy, setEnergy] = useState<EnergyBtn>(defaultEnergy);
-  const [hoursAlone, setHoursAlone] = useState<number>(defaultHours);
-
-  const [result, setResult] = useState<PlanSessionResult | null>(null);
-
-  const energyMap: Record<EnergyBtn, Energy> = {
-  couch: "low",
-  balanced: "medium",
-  zoomies: "high",
-};
-
-const handleSubmit = () => {
-    const session = planSession(weightKg, energyMap[energy], hoursAlone);
-    setResult(session);
+  const handlePlan = () => {
+    setPlan(planSession(weightKg, energy, hoursAlone));
   };
 
-  // Hardcoded energy buttons
-  const energyOptions = [
-    { key: "couch" as EnergyBtn, label: "Couch potato" },
-    { key: "balanced" as EnergyBtn, label: "Balanced" },
-    { key: "zoomies" as EnergyBtn, label: "Zoomies" },
-  ];
+  const handleAddRecommendedKit = () => {
+    if (!recommendedProduct) return;
 
-  const segments: ChamberSegment[] =
-    result?.tipChambers.map((c) => ({
-      hour: c.hour,
-      tray: c.tray,
-      tip: c.tip,
-    })) || [];
+    addItem(recommendedProduct.id, 1);
+    openDrawer();
+  };
 
   return (
-    <div className="min-h-screen bg-bg p-4 md:p-8">
-      {/* Plan section */}
-      <section className="max-w-2xl mx-auto mb-12">
-        <h2 className="text-4xl font-display font-semibold text-ink mb-6">
-          TickTail Planner
-        </h2>
-
-        {/* Inputs row */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          {/* Weight input */}
+    <div className="space-y-10">
+      <section className="rounded-3xl border border-ink/10 bg-white/70 p-6 sm:p-8">
+        <div className="grid gap-6 sm:grid-cols-3">
           <div>
-            <label htmlFor="dog-weight" className="block text-sm font-medium text-ink mb-1">
-              Dog weight (kg)
+            <label
+              htmlFor="dog-weight"
+              className="block text-sm font-semibold text-ink"
+            >
+              Weight (kg)
             </label>
             <input
               id="dog-weight"
               type="number"
-              min="2"
-              max="60"
+              min={2}
+              max={60}
               value={weightKg}
-              onChange={(e) => {
-                const v = Math.max(2, Math.min(60, Number(e.target.value)));
-                setWeightKg(v);
-              }}
-              className="w-full rounded-2xl border border-ink/15 bg-white px-4 py-3 text-ink focus:outline-none focus:border-primary sm:text-sm"
-              aria-label="Dog weight in kg"
+              onChange={(event) =>
+                setWeightKg(
+                  Math.min(60, Math.max(2, Number(event.target.value))),
+                )
+              }
+              className="mt-2 w-full rounded-2xl border border-ink/15 bg-bg px-4 py-3 text-ink focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
-          {/* Energy buttons */}
-          <div>
-            <label htmlFor="energy" className="block text-sm font-medium text-ink mb-1">
+          <fieldset>
+            <legend className="text-sm font-semibold text-ink">
               Energy level
-            </label>
-            <div className="space-x-2">
-              {energyOptions.map((eo) => {
-                const isSelected = energy === eo.key;
+            </legend>
+            <div className="mt-2 grid gap-2">
+              {ENERGY_OPTIONS.map((option) => {
+                const selected = energy === option.value;
+
                 return (
                   <button
-                    key={eo.key}
-                    onClick={() => setEnergy(eo.key as EnergyBtn)}
-                    className={`rounded-2xl px-4 py-3 text-sm font-medium transition-colors ${ENERGY_COLORS[eo.key]} ${isSelected ? "border-primary" : ""}`}
+                    key={option.value}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => setEnergy(option.value)}
+                    className={`rounded-2xl border px-4 py-3 text-left font-medium transition-colors ${
+                      selected
+                        ? "border-primary bg-primary/10 text-ink"
+                        : "border-ink/15 bg-bg text-muted hover:border-ink/30 hover:text-ink"
+                    }`}
                   >
-                    {eo.label}
+                    {option.label}
                   </button>
-                )
+                );
               })}
             </div>
-          </div>
+          </fieldset>
 
-          {/* Hours slider */}
           <div>
-            <label htmlFor="hours-alone" className="block text-sm font-medium text-ink mb-1">
-              Hours alone
-            </label>
+            <div className="flex items-center justify-between gap-4">
+              <label
+                htmlFor="hours-alone"
+                className="text-sm font-semibold text-ink"
+              >
+                Hours alone
+              </label>
+              <output
+                htmlFor="hours-alone"
+                className="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary"
+              >
+                {hoursAlone} {hoursAlone === 1 ? "hour" : "hours"}
+              </output>
+            </div>
             <input
               id="hours-alone"
               type="range"
-              min="1"
-              max="10"
+              min={1}
+              max={10}
               value={hoursAlone}
-              onChange={(e) => setHoursAlone(Number(e.target.value))}
-              className="w-full rounded-2xl border border-ink/15 bg-white p-2 appearance-none cursor-pointer"
-              aria-label="Hours alone (1-10)"
+              onChange={(event) => setHoursAlone(Number(event.target.value))}
+              className="mt-5 w-full accent-primary"
             />
-            <div className="flex justify-between text-xs text-muted mt-1">
+            <div className="mt-1 flex justify-between text-xs text-muted">
               <span>1</span>
-              <span>{hoursAlone}</span>
               <span>10</span>
             </div>
           </div>
         </div>
 
-        {/* Submit button */}
-        <button
-          onClick={handleSubmit}
-          disabled={!weightKg || !energy}
-          className="w-full rounded-2xl bg-primary py-3 px-4 text-white font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-4"
-        >
-          {!weightKg || !energy ? "Set inputs first" : "Plan my session"}
+        <button type="button" onClick={handlePlan} className="btn btn-primary mt-8">
+          Plan my dog&apos;s day
         </button>
       </section>
 
-      {/* Result section - shown after submit */}
-      {result && (
-        <section className="max-w-2xl mx-auto">
-          {/* Recommendation card */}
-          <div className="bg-white rounded-2xl p-6 mb-8 shadow-lg">
-            <h3 className="text-2xl font-display font-semibold text-ink mb-4">
-              {sizeDisplayText(result.size)} recommended
-            </h3>
-            <p className="text-muted mb-4">
-              {result.size} kit is ideal for dogs weighing {sizeWeightRange(
-                result.size,
-              )[0]}-{sizeWeightRange(result.size)[1]} kg.
+      {plan && recommendedProduct && (
+        <div className="space-y-8">
+          <section className="rounded-3xl border border-accent/30 bg-accent/10 p-6 sm:p-8">
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-muted">
+              Recommended kit
             </p>
-
-            <div className="mb-6">
-              <h4 className="font-medium text-ink mb-2">Kit details</h4>
-              <p className="text-3xl font-bold text-primary">
-                {formatINR(149900)} / month {sizeDisplayText(result.size)}
-              </p>
+            <h2 className="mt-2 font-display text-3xl font-semibold text-ink">
+              {recommendedProduct.name}
+            </h2>
+            <div className="mt-4 flex flex-wrap gap-x-8 gap-y-2 text-sm text-muted">
+              <span>
+                Weight range:{" "}
+                <strong className="text-ink">
+                  {recommendedProduct.weightRangeKg
+                    ? `${recommendedProduct.weightRangeKg[0]}–${recommendedProduct.weightRangeKg[1]} kg`
+                    : "See size guide"}
+                </strong>
+              </span>
+              <span>
+                Price:{" "}
+                <strong className="text-ink">
+                  {formatINR(recommendedProduct.pricePaise)}
+                </strong>
+              </span>
             </div>
-
             <button
-              onClick={() => {
-                // In full implementation, add to cart via context
-                setResult((prev) =>
-                  prev ? { ...prev, note: prev.note + " (added to cart)" } : { size: result.size, chambers: result.chambers, tipChambers: result.tipChambers, note: "Added to cart" }
-                )
-              }}
-              className="w-full rounded-2xl bg-accent py-3 px-4 text-white font-semibold transition-colors mt-4"
+              type="button"
+              onClick={handleAddRecommendedKit}
+              className="btn btn-primary mt-6"
             >
               Add recommended kit to cart
             </button>
-          </div>
+          </section>
 
-          {/* Personalised horizontal timeline */}
-          <div className="mt-12">
-            <h3 className="text-xl font-display font-semibold text-ink mb-4">
-              Your personalised session
-            </h3>
-            <div className="flex space-x-2">
-              {segments.map((segment) => {
-                return (
-                  <div
-                    key={segment.hour}
-                    className="flex-1 rounded-xl bg-bg p-4 text-center"
-                  >
-                    <p className="font-medium text-ink mb-1">{segment.hour}h</p>
-                    <p className="text-sm text-muted truncate">{segment.tray}</p>
-                  </div>
-                )
-              })}
+          <section>
+            <h2 className="font-display text-2xl font-semibold text-ink">
+              Your session
+            </h2>
+            <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
+              {plan.chambers.map((chamber) => (
+                <div
+                  key={chamber.hour}
+                  className="min-w-[160px] flex-1 rounded-2xl bg-primary/10 p-4"
+                >
+                  <p className="text-sm font-semibold text-ink">
+                    Hour {chamber.hour} — {chamber.tray}
+                  </p>
+                </div>
+              ))}
             </div>
-          </div>
-        </section>
+          </section>
+
+          {plan.notes?.map((note) => (
+            <p key={note} className="text-sm text-muted">
+              {note}
+            </p>
+          ))}
+        </div>
       )}
     </div>
-  )
+  );
 }
