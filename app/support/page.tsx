@@ -1,74 +1,50 @@
-"use client";
-
-import Link from "next/link";
-
 export default function SupportPage() {
   return (
-    <main className="flex-1 bg-bg p-4 md:p-8">
-      <div className="max-w-3xl mx-auto">
-        {/* Shipping section */}
-        <section className="mb-12">
-          <h2 className="text-4xl font-display font-semibold text-ink mb-6">
+    <div className="mx-auto max-w-3xl px-4 py-12 sm:py-16">
+      <h1 className="font-display text-4xl font-semibold text-ink sm:text-5xl">
+        Support
+      </h1>
+
+      <div className="mt-10 space-y-8">
+        <section className="rounded-3xl border border-ink/10 bg-white/60 p-6">
+          <h2 className="font-display text-2xl font-semibold text-ink">
             Shipping
           </h2>
-          <div className="border rounded-xl p-6 bg-white space-y-4">
-            <div>
-              <p className="font-medium text-ink">Flat rate</p>
-              <p className="text-2xl font-bold text-primary">₹79</p>
-            </div>
-            <div>
-              <p className="font-medium text-ink">Free shipping</p>
-              <p className="text-2xl font-bold text-primary">Over ₹999</p>
-            </div>
-            <div>
-              <p className="font-medium text-ink">Delivery time</p>
-              <p>3–5 business days</p>
-            </div>
-          </div>
+          <p className="mt-3 leading-relaxed text-muted">
+            Flat ₹79, free over ₹999. Dispatched in 24 hours, delivered in 3–5
+            days.
+          </p>
         </section>
 
-        {/* Returns section */}
-        <section className="mb-12">
-          <h2 className="text-4xl font-display font-semibold text-ink mb-6">
+        <section className="rounded-3xl border border-ink/10 bg-white/60 p-6">
+          <h2 className="font-display text-2xl font-semibold text-ink">
             Returns
           </h2>
-          <div className="border rounded-xl p-6 bg-white space-y-4">
-            <p>30-day return window</p>
-            <p>Items must be unused</p>
-            <p>Refund processed within 7 business days</p>
-          </div>
+          <p className="mt-3 leading-relaxed text-muted">
+            30-day returns on unused kits. Refills are final sale for hygiene.
+          </p>
         </section>
 
-        {/* Contact section */}
-        <section className="mb-12">
-          <h2 className="text-4xl font-display font-semibold text-ink mb-6">
+        <section className="rounded-3xl border border-ink/10 bg-white/60 p-6">
+          <h2 className="font-display text-2xl font-semibold text-ink">
             Contact
           </h2>
-          <div className="border rounded-xl p-6 bg-white space-y-4">
-            <p className="font-medium text-ink">support@ticktail.in</p>
-            <p className="font-medium text-ink">Response within 24 hours</p>
-          </div>
+          <p className="mt-3 leading-relaxed text-muted">
+            Email support@ticktail.in — we reply within one working day.
+          </p>
         </section>
 
-        {/* About section */}
-        <section>
-          <h2 className="text-4xl font-display font-semibold text-ink mb-6">
+        <section className="rounded-3xl border border-ink/10 bg-white/60 p-6">
+          <h2 className="font-display text-2xl font-semibold text-ink">
             About
           </h2>
-          <div className="border rounded-xl p-6 bg-white">
-            <p>
-              TickTail uses a wind-up clockwork mechanism that delivers six
-              different puzzle experiences over six hours — no batteries, no apps,
-              just pure mechanical engagement designed for dogs who love to think.
-            </p>
-            <p>
-              Each chamber unlocks a new skill, from scent tracking to paw-eye
-              coordination, providing mental stimulation that tires dogs out
-              without requiring electricity or Wi-Fi.
-            </p>
-          </div>
+          <p className="mt-3 leading-relaxed text-muted">
+            TickTail is a clockwork puzzle tower: a wound spring and escapement
+            unlock one of six puzzle trays per hour. No batteries, no apps — just
+            engineering.
+          </p>
         </section>
       </div>
-    </main>
+    </div>
   );
 }
