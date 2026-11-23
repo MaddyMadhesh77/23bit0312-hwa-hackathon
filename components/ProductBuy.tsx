@@ -19,6 +19,16 @@ const GALLERY_IMAGES = [
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
 
+function StockBadge({ stock }: { stock: number }) {
+  if (stock >= 10) return null;
+
+  return (
+    <span className="rounded-full bg-accent/20 px-2 py-0.5 text-xs font-semibold text-ink">
+      Only {stock} left
+    </span>
+  );
+}
+
 export default function ProductBuy({ kits }: ProductBuyProps) {
   const { addItem, openDrawer } = useCart();
   const [selectedKit, setSelectedKit] = useState<Product>(kits[0]);
@@ -28,6 +38,7 @@ export default function ProductBuy({ kits }: ProductBuyProps) {
   const [added, setAdded] = useState(false);
   const addedTimer = useRef<number | null>(null);
   const refillIntro = getProduct("refill-intro")!;
+  const traySet = getProduct("tray-set")!;
 
   useEffect(() => {
     return () => {
@@ -197,15 +208,18 @@ export default function ProductBuy({ kits }: ProductBuyProps) {
           </p>
         )}
 
-        <div className="mt-7">
-          <span className="text-sm text-muted">Total</span>
-          <p className="text-2xl font-bold text-ink">
-            {formatINR(
-              (selectedKit.pricePaise +
-                (mode === "sub" ? refillIntro.pricePaise : 0)) *
-                qty,
-            )}
-          </p>
+        <div className="mt-7 flex items-center justify-between gap-3">
+          <div>
+            <span className="text-sm text-muted">Total</span>
+            <p className="text-2xl font-bold text-ink">
+              {formatINR(
+                (selectedKit.pricePaise +
+                  (mode === "sub" ? refillIntro.pricePaise : 0)) *
+                  qty,
+              )}
+            </p>
+          </div>
+          <StockBadge stock={selectedKit.stock} />
         </div>
 
         <div className="mt-6">
@@ -216,6 +230,28 @@ export default function ProductBuy({ kits }: ProductBuyProps) {
             className="rounded-2xl bg-accent px-6 py-3 font-semibold text-ink transition-colors hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
           >
             {added ? "Added ✓" : "Add to Cart"}
+          </button>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between rounded-2xl border border-muted/30 p-3">
+          <div>
+            <p className="text-sm font-semibold">Need spares?</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-sm text-muted">
+                {traySet.name} · {formatINR(traySet.pricePaise)}
+              </p>
+              <StockBadge stock={traySet.stock} />
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              addItem("tray-set", 1);
+              openDrawer();
+            }}
+            className="rounded-xl border border-primary px-4 py-1.5 text-sm font-semibold text-primary"
+          >
+            Add
           </button>
         </div>
       </section>
