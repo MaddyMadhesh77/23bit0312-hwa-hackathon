@@ -35,6 +35,10 @@ function weightLabel(kit: Product): string {
   return `${kit.weightRangeKg[0]}–${kit.weightRangeKg[1]} kg`;
 }
 
+/** Subscription: 15% off refill-pack (39900 → 33900 rounded). */
+const SUBSCRIPTION_REFILL_PAISE = 33900;
+const ONE_TIME_REFILL_PAISE = 39900;
+
 export default function ProductBuy({ kits }: ProductBuyProps) {
   const { addItem, openDrawer } = useCart();
   const [activeImage, setActiveImage] = useState(0);
@@ -59,9 +63,40 @@ export default function ProductBuy({ kits }: ProductBuyProps) {
     );
   }
 
+  // ---- Purchase toggle state ----
+  const [purchaseMode, setPurchaseMode] = useState<'one-time' | 'subscription'>('one-time');
+  // Refill qty: 1 for subscription, user-chosen for one-time
+  const [refillQty, setRefillQty] = useState(1);
+
+  // Prices
+  const kitPricePaise = selected.pricePaise;
+  const refillOneTimePaise = ONE_TIME_REFILL_PAISE; // 39900
+  const refillSubscriptionPaise = SUBSCRIPTION_REFILL_PAISE; // 33900
+
+  // Derived totals
+  const kitTotalPaise = kitPricePaise * qty;
+  const refillTotalPaise = refillQty * (purchaseMode === 'subscription'
+    ? refillSubscriptionPaise
+    : refillOneTimePaise);
+  const combinedTotalPaise = kitTotalPaise + refillTotalPaise;
+  const combinedTotalINR = formatINR(combinedTotalPaise);
+  const kitINR = formatINR(kitPricePaise);
+  const refillINR = formatINR(refillTotalPaise);
+
+  // Effect to keep refillQty min 1
+  useEffect(() => {
+    if (refillQty < 1) setRefillQty(1);
+  }, [refillQty]);
+
   function handleAddToCart() {
     if (!selected) return;
-    addItem(selected.id, qty);
+    // In subscription mode, add both the kit and the refill
+    if (purchaseMode === 'subscription') {
+      addItem(selected.id, 1);
+      addItem('refill-pack', refillQty);
+    } else {
+      addItem(selected.id, qty);
+    }
     openDrawer();
     setAdded(true);
     if (addedTimer.current !== null) {
@@ -72,6 +107,16 @@ export default function ProductBuy({ kits }: ProductBuyProps) {
       addedTimer.current = null;
     }, 2000);
   }
+
+  // Helper: generate a one-sentence skill description per hour tray
+  const traySkills: Record<string, string> = {
+    'Slide-lid tray': 'Sliding a lid reveals a hidden compartment, teaching dogs to investigate and use their nose to discover what\'s inside.',
+    'Nose-flip flap': 'A spring-loaded flap that flips up when nudged, rewarding dogs for precise nose touches and timing.',
+    'Roll-out ball maze': 'A ball that rolls out slowly when pushed, encouraging dogs to use their paw to control the pace of play.',
+    'Scent-hide pocket': 'A pocket scented with natural herb aroma that taps into dogs\' instinct to track and follow scent trails.',
+    'Lick-and-twist cup': 'A textured cup that dispenses treats when licked, soothing anxious dogs and promoting calm chewing behavior.',
+    'Pull-the-tab drawer': 'A drawer that extends when a tab is pulled, teaching patience and rewarding dogs for controlled, deliberate movements.',
+  };
 
   return (
     <div className="mt-8 grid gap-10 md:mt-12 md:grid-cols-2 md:gap-12">
@@ -199,20 +244,74 @@ export default function ProductBuy({ kits }: ProductBuyProps) {
           </div>
         </div>
 
-        {/* Price */}
+        {/* Purchase mode toggle */}
+        <div className="mt-4 rounded-2xl bg-bg p-3 mb-5">
+          {/* One-time radio */}
+          <label className="font-sm font-medium cursor-pointer">
+            <input
+              type="radio"
+              name="purchase-mode"
+              value="one-time"
+              checked={purchaseMode === 'one-time'}
+              onChange={() => setPurchaseMode('one-time')}
+              className="hidden"
+            />
+            <span className="rounded-xl px-3 py-1.5 text-sm font-medium transition-colors {purchaseMode === 'one-time' && 'text-primary bg-primary/10'}">{'One-time'}</span>
+          </label>
+          {/* Subscription radio */}
+          <label className="font-sm font-medium cursor-pointer">
+            <input
+              type="radio"
+              name="purchase-mode"
+              value="subscription"
+              checked={purchaseMode === 'subscription'}
+              onChange={() => setPurchaseMode('subscription')}
+              className="hidden"
+            />
+            <span className="rounded-xl px-3 py-1.5 text-sm font-medium transition-colors {purchaseMode === 'subscription' && 'text-primary bg-primary/10'}">{'Kit + monthly refills'}</span>
+          </label>
+        </div>
+
+        {/* Price area */}
         <div className="mt-6 rounded-2xl bg-white/70 p-4">
           <div className="flex items-baseline justify-between gap-4">
-            <span className="text-sm text-muted">Price</span>
+            <span className="text-sm text-muted">Kit price</span>
             <span className="text-3xl font-semibold tracking-tight text-ink tabular-nums">
-              {formatINR(selected.pricePaise)}
+              {kitINR}
             </span>
           </div>
-          <div className="mt-1 flex items-baseline justify-between gap-4 text-sm text-muted">
+          {/* Subscription refill pricing */}
+          {purchaseMode === 'subscription' && (
+            <div className="mt-2 flex items-baseline justify-between gap-2 text-sm">
+              <span className="text-muted">Refill (subscription)</span>
+              <span className="text-3xl font-semibold tracking-tight text-primary">
+                {formatINR(refillSubscriptionPaise)}
+              </span>
+            </div>
+          )}
+          {purchaseMode !== 'subscription' && (
+            <div className="mt-2 flex items-baseline justify-between gap-2 text-sm">
+              <span className="text-muted">Refill (one-time)</span>
+              <span className="text-3xl font-semibold text-error">
+                {formatINR(refillOneTimePaise)}
+              </span>
+            </div>
+          )}
+          {/* Struck-through one-time refill price when in subscription mode */}
+          {purchaseMode === 'subscription' && (
+            <div className="mt-2 flex items-baseline justify-between gap-2">
+              <span className="text-muted text-xs line-through">
+                {formatINR(refillOneTimePaise)}
+              </span>
+              <span className="text-xs text-muted">₹399 → ₹339</span>
+            </div>
+          )}
+          <div className="mt-3 flex items-baseline justify-between gap-4">
             <span>
               Total for {qty} {qty === 1 ? "kit" : "kits"}
             </span>
-            <span className="tabular-nums">
-              {formatINR(selected.pricePaise * qty)}
+            <span className="text-3xl font-bold text-ink tabular-nums">
+              {combinedTotalINR}
             </span>
           </div>
         </div>
@@ -229,7 +328,9 @@ export default function ProductBuy({ kits }: ProductBuyProps) {
           </button>
           <p className="mt-3 text-center text-sm text-muted">
             {selected.stock > 0
-              ? `In stock · ${selected.stock} available`
+              ? selected.stock < 10
+                ? `Only ${selected.stock} left`
+                : `In stock · ${selected.stock} available`
               : "Out of stock"}
           </p>
         </div>
