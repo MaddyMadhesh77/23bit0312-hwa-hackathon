@@ -34,6 +34,12 @@ export default function Header() {
           >
             Planner
           </Link>
+          <Link
+            href="/track"
+            className={`text-sm font-medium text-muted transition-colors hover:text-ink sm:text-base ${focusRing}`}
+          >
+            Track order
+          </Link>
         </nav>
 
         <Link
