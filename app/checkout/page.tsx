@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { useCart } from "@/lib/cart";
 import { CreateOrderSchema } from "@/lib/order-schema";
@@ -28,7 +28,7 @@ type FieldName =
   | "pincode";
 
 type Values = Record<FieldName, string>;
-type Errors = Partial<Record<FieldName, string>>;
+type FieldErrors = Record<string, string>;
 
 const FIELDS: {
   name: FieldName;
@@ -64,11 +64,11 @@ function normalize(values: Values): Values {
   };
 }
 
-function validate(values: Values): Errors {
+function validate(values: Values): FieldErrors {
   const result = CustomerSchema.safeParse(normalize(values));
   if (result.success) return {};
 
-  const errors: Errors = {};
+  const errors: FieldErrors = {};
   for (const issue of result.error.issues) {
     const key = issue.path[0];
     if (typeof key === "string" && FIELD_NAMES.includes(key as FieldName)) {
@@ -83,7 +83,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { items, clearCart, hydrated } = useCart();
 
-  const [values, setValues] = useState<Values>({
+  const [formValues, setFormValues] = useState<Values>({
     name: "",
     email: "",
     phone: "",
@@ -92,14 +92,22 @@ export default function CheckoutPage() {
     state: "",
     pincode: "",
   });
-  const [errors, setErrors] = useState<Errors>({});
-  const [formError, setFormError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
 
-  // One key per checkout attempt, so a double click or retry never creates two orders.
-  const idempotencyKey = useRef<string | null>(null);
+  // One key per visit to the checkout, so a retry after a failure reuses the
+  // same key and the API can never create the order twice. Created in an
+  // effect (not the ref initializer) because crypto.randomUUID() is unstable
+  // during prerender and Next 16 forbids it there.
+  const idempotencyKeyRef = useRef<string | null>(null);
 
+  useEffect(() => {
+    idempotencyKeyRef.current ??= crypto.randomUUID();
+  }, []);
+
+  // Prices always come from lib/products, never from cart state.
   const cartLines = items.flatMap((item) => {
     const product = PRODUCTS.find((candidate) => candidate.id === item.productId);
     return product ? [{ item, product }] : [];
@@ -109,110 +117,104 @@ export default function CheckoutPage() {
     (subtotal, { item, product }) => subtotal + product.pricePaise * item.qty,
     0,
   );
-  const shippingPaise = subtotalPaise === 0 || subtotalPaise >= 99900 ? 0 : 7900;
+  const shippingPaise = subtotalPaise >= 99900 ? 0 : 7900;
   const totalPaise = subtotalPaise + shippingPaise;
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const name = event.target.name as FieldName;
     const value = event.target.value;
-    setValues((current) => ({ ...current, [name]: value }));
-    if (errors[name]) {
-      setErrors((current) => ({ ...current, [name]: undefined }));
-    }
+    setFormValues((current) => ({ ...current, [name]: value }));
+    setFieldErrors((current) => {
+      if (!(name in current)) return current;
+      const next = { ...current };
+      delete next[name];
+      return next;
+    });
   };
 
   const handleBlur = (name: FieldName) => {
-    if (values[name] === "") return;
-    const message = validate(values)[name];
-    setErrors((current) => ({ ...current, [name]: message }));
+    if (formValues[name] === "") return;
+    const message = validate(formValues)[name];
+    if (message) {
+      setFieldErrors((current) => ({ ...current, [name]: message }));
+    }
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (submitting || redirecting) return;
+    if (isSubmitting || redirecting) return;
 
-    setFormError(null);
+    setFieldErrors({});
+    setServerError(null);
 
-    const clientErrors = validate(values);
-    setErrors(clientErrors);
+    idempotencyKeyRef.current ??= crypto.randomUUID();
 
-    const firstInvalid = FIELD_NAMES.find((name) => clientErrors[name]);
-    if (firstInvalid) {
-      document.getElementById(firstInvalid)?.focus();
+    const payload = {
+      ...normalize(formValues),
+      items: items.map(({ productId, qty }) => ({ productId, qty })),
+      idempotencyKey: idempotencyKeyRef.current,
+    };
+
+    const parsed = CreateOrderSchema.safeParse(payload);
+    if (!parsed.success) {
+      const errors: FieldErrors = {};
+      for (const issue of parsed.error.issues) {
+        const key = issue.path[0];
+        if (typeof key === "string" && FIELD_NAMES.includes(key as FieldName)) {
+          const field = key as FieldName;
+          if (!errors[field]) errors[field] = issue.message;
+        }
+      }
+      if (Object.keys(errors).length > 0) {
+        setFieldErrors(errors);
+      } else {
+        setServerError("Something went wrong placing your order — please try again.");
+      }
       return;
     }
 
-    if (!idempotencyKey.current) {
-      idempotencyKey.current = crypto.randomUUID();
-    }
-
-    setSubmitting(true);
+    setIsSubmitting(true);
 
     try {
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...normalize(values),
-          items: items.map(({ productId, qty }) => ({ productId, qty })),
-          idempotencyKey: idempotencyKey.current,
-        }),
+        body: JSON.stringify(payload),
       });
 
-      let data: Record<string, unknown> = {};
-      try {
-        data = await response.json();
-      } catch {
-        data = {};
-      }
-
-      if (response.ok && typeof data.code === "string") {
+      if (response.ok) {
+        const body = await response.json();
         setRedirecting(true);
         clearCart();
-        router.push(`/order/${data.code}?placed=1`);
+        router.push("/order/" + body.code + "?new=1");
         return;
       }
 
-      if (response.status === 400 && data.error === "validation") {
-        const issues = (data.issues ?? {}) as Record<string, string>;
-        const serverErrors: Errors = {};
-        for (const name of FIELD_NAMES) {
-          if (issues[name]) serverErrors[name] = issues[name];
+      if (response.status === 400) {
+        const body = await response.json().catch(() => null);
+        const issues = (body?.issues ?? {}) as Record<string, string>;
+        const serverErrors: FieldErrors = {};
+        for (const [key, message] of Object.entries(issues)) {
+          const field = key.split(".")[0];
+          if (FIELD_NAMES.includes(field as FieldName) && !serverErrors[field]) {
+            serverErrors[field] = message;
+          }
         }
-        setErrors(serverErrors);
-
-        const first = FIELD_NAMES.find((name) => serverErrors[name]);
-        if (first) {
-          document.getElementById(first)?.focus();
+        if (Object.keys(serverErrors).length > 0) {
+          setFieldErrors(serverErrors);
         } else {
-          setFormError("Something in your cart looks wrong. Please review it and try again.");
+          setServerError("Something went wrong placing your order — please try again.");
         }
-        idempotencyKey.current = null;
-      } else if (response.status === 400) {
-        setFormError("We couldn't read that order. Please try again.");
-        idempotencyKey.current = null;
-      } else if (response.status === 404) {
-        setFormError("An item in your cart is no longer available. Please review your cart.");
-        idempotencyKey.current = null;
       } else if (response.status === 409) {
-        const stockItems = (data.items ?? []) as { productId: string; stock: number }[];
-        const names = stockItems
-          .map((entry) => PRODUCTS.find((product) => product.id === entry.productId)?.name)
-          .filter(Boolean)
-          .join(", ");
-        setFormError(
-          names
-            ? `Not enough stock for: ${names}. Please lower the quantity in your cart.`
-            : "Some items are out of stock. Please review your cart.",
-        );
-        idempotencyKey.current = null;
+        setServerError("Some items just went out of stock — review your cart.");
       } else {
-        setFormError("Something went wrong on our side. Your cart is safe, please try again.");
+        setServerError("Something went wrong placing your order — please try again.");
       }
+
+      setIsSubmitting(false);
     } catch {
-      setFormError("Network problem. Check your connection and try again. Your cart is safe.");
-    } finally {
-      setSubmitting(false);
+      setServerError("Something went wrong placing your order — please try again.");
+      setIsSubmitting(false);
     }
   };
 
@@ -252,20 +254,8 @@ export default function CheckoutPage() {
           <h1 className="font-display text-3xl font-semibold text-ink">Checkout</h1>
 
           <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-5">
-            {formError && (
-              <div
-                role="alert"
-                className="rounded-2xl border border-error/30 bg-error/5 p-4 text-sm text-error"
-              >
-                {formError}{" "}
-                <Link href="/cart" className="font-medium underline">
-                  Review cart
-                </Link>
-              </div>
-            )}
-
             {FIELDS.map((field) => {
-              const error = errors[field.name];
+              const error = fieldErrors[field.name];
               return (
                 <div key={field.name}>
                   <label htmlFor={field.name} className="block text-sm font-medium text-ink">
@@ -278,7 +268,7 @@ export default function CheckoutPage() {
                     inputMode={field.inputMode}
                     autoComplete={field.autoComplete}
                     maxLength={field.maxLength}
-                    value={values[field.name]}
+                    value={formValues[field.name]}
                     onChange={handleChange}
                     onBlur={() => handleBlur(field.name)}
                     aria-invalid={error ? true : undefined}
@@ -299,12 +289,24 @@ export default function CheckoutPage() {
               <p className="mt-1">Demo checkout. No card details are needed.</p>
             </div>
 
+            {serverError && (
+              <div
+                role="alert"
+                className="rounded-2xl border border-error/30 bg-error/5 p-4 text-sm text-error"
+              >
+                {serverError}{" "}
+                <Link href="/cart" className="font-medium underline">
+                  Review cart
+                </Link>
+              </div>
+            )}
+
             <button
               type="submit"
-              disabled={submitting}
-              className="btn btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={isSubmitting}
+              className="w-full rounded-2xl bg-accent px-6 py-4 font-semibold text-ink disabled:opacity-50"
             >
-              {submitting ? "Placing order…" : `Place order · ${formatINR(totalPaise)}`}
+              {isSubmitting ? "Placing order…" : "Place Order — " + formatINR(totalPaise)}
             </button>
           </form>
         </section>
