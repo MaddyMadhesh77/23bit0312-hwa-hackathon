@@ -81,6 +81,56 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      <section className="max-w-5xl mx-auto px-4 pb-16">
+        <h2 className="text-3xl md:text-4xl font-bold">
+          Why it&apos;s different
+        </h2>
+
+        <div className="mt-8 overflow-x-auto">
+          <table className="w-full min-w-[700px] border-collapse text-left">
+            <thead className="border-b border-ink/15">
+              <tr>
+                <th className="p-3 text-left text-muted"></th>
+                <th className="p-3 text-left text-muted">Engagement time</th>
+                <th className="p-3 text-left text-muted">Variety</th>
+                <th className="p-3 text-left text-muted">Power needed</th>
+                <th className="p-3 text-left text-muted">Mess</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-ink/10">
+              <tr>
+                <td className="p-3 text-ink">Stuffable rubber toys</td>
+                <td className="p-3 text-muted">Minutes</td>
+                <td className="p-3 text-muted">One trick</td>
+                <td className="p-3 text-muted">None</td>
+                <td className="p-3 text-muted">Low</td>
+              </tr>
+              <tr>
+                <td className="p-3 text-ink">Puzzle boards</td>
+                <td className="p-3 text-muted">Minutes once learned</td>
+                <td className="p-3 text-muted">One trick</td>
+                <td className="p-3 text-muted">None</td>
+                <td className="p-3 text-muted">Low</td>
+              </tr>
+              <tr>
+                <td className="p-3 text-ink">Snuffle mats</td>
+                <td className="p-3 text-muted">Minutes</td>
+                <td className="p-3 text-muted">Sniffing only</td>
+                <td className="p-3 text-muted">None</td>
+                <td className="p-3 text-muted">High</td>
+              </tr>
+              <tr className="bg-primary/10 font-semibold">
+                <td className="p-3">TickTail</td>
+                <td className="p-3">2–6 hours</td>
+                <td className="p-3">Six skills</td>
+                <td className="p-3">None — clockwork</td>
+                <td className="p-3">Sealed chambers</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </>
   );
 }
