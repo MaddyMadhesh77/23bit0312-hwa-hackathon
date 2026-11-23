@@ -1,184 +1,278 @@
+import Link from "next/link";
 import { sql } from "@vercel/postgres";
 import { formatINR } from "@/lib/products";
-import { PRODUCTS } from "@/lib/products";
-import Link from "next/link";
 
 export const instant = false;
 
-export default async function OrderPage({ params }: PageProps<"/order/[code]">) {
-  const { code: rawCode } = await params;
+type OrderItem = {
+  productId: string;
+  name: string;
+  qty: number;
+  unitPricePaise: number;
+};
+
+type OrderRow = {
+  id: string;
+  code: string;
+  customer_name: string;
+  email: string;
+  address_line1: string;
+  city: string;
+  state: string;
+  pincode: string;
+  items: unknown;
+  subtotal_paise: number;
+  shipping_paise: number;
+  total_paise: number;
+  status: string;
+  created_at: string | Date;
+};
+
+type OrderPageProps = {
+  params: Promise<{ code: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+function isOrderItem(value: unknown): value is OrderItem {
+  if (!value || typeof value !== "object") return false;
+
+  const item = value as Partial<OrderItem>;
+  return (
+    typeof item.productId === "string" &&
+    typeof item.name === "string" &&
+    typeof item.qty === "number" &&
+    typeof item.unitPricePaise === "number"
+  );
+}
+
+function parseOrderItems(value: unknown): OrderItem[] {
+  let parsed = value;
+
+  if (typeof parsed === "string") {
+    try {
+      parsed = JSON.parse(parsed);
+    } catch {
+      return [];
+    }
+  }
+
+  return Array.isArray(parsed) ? parsed.filter(isOrderItem) : [];
+}
+
+function maskEmail(email: string): string {
+  const separatorIndex = email.indexOf("@");
+  if (separatorIndex < 0) return `${email.charAt(0)}***`;
+
+  return `${email.charAt(0)}***${email.slice(separatorIndex)}`;
+}
+
+export default async function OrderPage({
+  params,
+  searchParams,
+}: OrderPageProps) {
+  const [{ code: rawCode }, query] = await Promise.all([params, searchParams]);
   const code = rawCode.toUpperCase();
 
-  // Query the database directly
-  const orders = await sql`SELECT * FROM orders WHERE code = ${code}`;
+  const result = await sql<OrderRow>`
+    SELECT
+      id,
+      code,
+      customer_name,
+      email,
+      address_line1,
+      city,
+      state,
+      pincode,
+      items,
+      subtotal_paise,
+      shipping_paise,
+      total_paise,
+      status,
+      created_at
+    FROM orders
+    WHERE code = ${code}
+  `;
 
-  if (orders.rowCount === 0) {
-    // Order not found
+  const order = result.rows[0];
+
+  if (!order) {
     return (
-      <div className="min-h-screen p-8 bg-bg text-center">
-        <h1 className="text-4xl font-bold text-ink mb-4">Order not found</h1>
-        <p className="text-lg text-muted mb-8">
-          We could not find an order with code <code className="font-mono">{code}</code>.
+      <section className="mx-auto max-w-2xl px-4 py-16 text-center sm:py-24">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-accent/15 text-3xl">
+          ?
+        </div>
+        <h1 className="mt-6 font-display text-4xl font-semibold text-ink">
+          Order not found
+        </h1>
+        <p className="mx-auto mt-4 max-w-md text-base leading-relaxed text-muted">
+          We couldn&apos;t find an order with code{" "}
+          <code className="rounded-lg bg-white px-2 py-1 font-mono text-sm text-ink">
+            {code}
+          </code>
+          . Check the code and try again.
         </p>
-        <Link href="/track" className="btn btn-primary">
-          Track order
+        <Link href="/track" className="btn btn-primary mt-8">
+          Track an order
         </Link>
-      </div>
+      </section>
     );
   }
 
-  const order = orders.rows[0];
+  const items = parseOrderItems(order.items);
+  const newParam = query.new;
+  const showSuccessBanner =
+    newParam === "1" ||
+    (Array.isArray(newParam) && newParam.includes("1"));
 
-  // Mask email: first char + "***@" + domain
-  const emailParts = order.email.split("@");
-  const maskedEmail =
-    emailParts.length > 1
-      ? emailParts[0].charAt(0) + "***@" + emailParts[1]
-      : order.email;
-
-  // Parse items from jsonb
-  const rawItems = JSON.parse(order.items as string);
-  const items = rawItems.map((it: any) => {
-    const product = PRODUCTS.find((p: any) => p.id === it.productId);
-    return {
-      ...it,
-      product,
-      lineTotal: product ? product.pricePaise * it.qty : 0,
-    };
-  });
-
-  // Calculate totals
-  const subtotal = items.reduce(
-    (sum: number, item: any) => sum + item.lineTotal,
-    0
-  );
-  const shipping = subtotal >= 99_900 ? 0 : 7_900;
-  const total = subtotal + shipping;
-
-  // Estimated delivery = created_at + 5 days
-  const createdDate = new Date(order.created_at);
+  const createdAt = new Date(order.created_at);
   const estimatedDelivery = new Date(
-    createdDate.getTime() + 5 * 24 * 60 * 60 * 1000
+    createdAt.getTime() + 5 * 24 * 60 * 60 * 1000,
   );
-  const formattedDate = new Intl.DateTimeFormat("en-IN", {
+  const estimatedDeliveryLabel = new Intl.DateTimeFormat("en-IN", {
     dateStyle: "long",
   }).format(estimatedDelivery);
-
-  // First session tip
-  const tipText =
-    "Supervise the first session, and start with only chambers 1 and 2 filled.";
-
-  // Check if new=1 search param is present for success banner
-  // In Next.js App Router, search params can be accessed from the URL
-  // We'll check for ?new=1 in the search params
-  // The success banner appears only when new=1 is present
-
-  // Calculate showSuccessBanner - check URL for ?new=1
-  // Since this is a server component, we check the search params
-  // from the URL. The new=1 param is added by the checkout redirect.
-  const showSuccessBanner = false; // Placeholder - will be checked via URL params
-
-  // Actually, let me check the search params properly
-  // In Next.js, we can access search params from the URL
-  // For now, we'll use a simple approach:
-  // The banner shows when new=1 search param is present
+  const statusLabel = order.status.charAt(0).toUpperCase() + order.status.slice(1);
 
   return (
-    <div className="min-h-screen p-4 md:p-8 bg-bg">
-      {/* Success banner - only when new=1 search param is present */}
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:py-12">
       {showSuccessBanner && (
-        <div className="bg-green-100 border-l-4 border-green-500 text-green-800 p-4 mb-8 rounded-tl rounded-tr">
-          <p className="font-medium">Order confirmed — check your email for details</p>
+        <div
+          role="status"
+          className="mb-8 rounded-2xl border border-success/25 bg-success/10 px-5 py-4 text-success"
+        >
+          <p className="font-semibold">
+            Order confirmed — check your email for details
+          </p>
         </div>
       )}
 
-      <div className="max-w-3xl mx-auto">
-        {/* Order code - large and copyable */}
-        <div className="mb-6 text-center">
-          <h2 className="text-3xl font-bold text-ink mb-2">{order.code}</h2>
-          <p className="text-muted">
-            Copy code: <kbd className="font-mono bg-bg px-2 rounded">{order.code}</kbd>
-          </p>
-        </div>
+      <section className="text-center">
+        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-muted">
+          Order code
+        </p>
+        <code
+          title="Select and copy this code"
+          aria-label={`Order code ${order.code}`}
+          className="mt-3 block cursor-text select-all font-mono text-4xl font-bold tracking-wider text-ink sm:text-5xl"
+        >
+          {order.code}
+        </code>
+        <p className="mt-3 text-sm text-muted">
+          Select and copy this code for support or tracking.
+        </p>
+      </section>
 
-        {/* Items */}
-        <ul className="space-y-4 mb-8">
-          {items.map((item: any, index: number) => {
-            if (!item.product) return null;
-            return (
-              <li key={index} className="flex items-baseline justify-between">
-                <div className="flex items-center gap-3">
-                  <img
-                    src={item.product.image}
-                    alt={item.product.name}
-                    className="h-12 w-12 rounded-2xl object-cover"
-                  />
+      <div className="mt-10 grid items-start gap-6 lg:grid-cols-[1.25fr_0.75fr]">
+        <div className="space-y-6">
+          <section className="rounded-3xl border border-ink/10 bg-white p-5 sm:p-7">
+            <div className="flex items-center justify-between gap-4">
+              <h2 className="font-display text-2xl font-semibold text-ink">
+                Items
+              </h2>
+              <span className="rounded-full bg-bg px-3 py-1 text-sm text-muted">
+                {items.length} {items.length === 1 ? "item" : "items"}
+              </span>
+            </div>
+
+            <ul className="mt-5 divide-y divide-ink/10">
+              {items.map((item, index) => (
+                <li
+                  key={`${item.productId}-${index}`}
+                  className="grid gap-3 py-5 first:pt-0 last:pb-0 sm:grid-cols-[1fr_auto] sm:items-center"
+                >
                   <div>
-                    <p className="font-medium text-ink truncate">{item.product.name}</p>
-                    <p className="text-xs text-muted">Qty: {item.qty}</p>
+                    <p className="font-semibold text-ink">{item.name}</p>
+                    <p className="mt-1 text-sm text-muted">
+                      Quantity {item.qty} × {formatINR(item.unitPricePaise)}
+                    </p>
                   </div>
-                </div>
-                <span className="font-semibold text-ink">{formatINR(item.lineTotal)}</span>
-              </li>
-            );
-          })}
-        </ul>
+                  <p className="font-semibold text-ink sm:text-right">
+                    {formatINR(item.unitPricePaise * item.qty)}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </section>
 
-        {/* Summary */}
-        <div className="border-t pt-8 mb-8">
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <p className="text-muted">Subtotal</p>
-              <p className="font-semibold">{formatINR(subtotal)}</p>
+          <section className="rounded-3xl border border-accent/30 bg-accent/10 p-5 sm:p-6">
+            <h2 className="font-display text-xl font-semibold text-ink">
+              First session
+            </h2>
+            <p className="mt-2 leading-relaxed text-ink/80">
+              Supervise the first session, and start with only chambers 1 and 2
+              filled.
+            </p>
+          </section>
+        </div>
+
+        <aside className="space-y-6">
+          <section className="rounded-3xl border border-ink/10 bg-white p-5 sm:p-6">
+            <h2 className="font-display text-xl font-semibold text-ink">
+              Order summary
+            </h2>
+
+            <dl className="mt-5 space-y-3 text-sm">
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted">Subtotal</dt>
+                <dd className="font-medium text-ink">
+                  {formatINR(order.subtotal_paise)}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted">Shipping</dt>
+                <dd className="font-medium text-ink">
+                  {order.shipping_paise === 0
+                    ? "Free"
+                    : formatINR(order.shipping_paise)}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-4 border-t border-ink/10 pt-4 text-base">
+                <dt className="font-bold text-ink">Total</dt>
+                <dd className="font-bold text-ink">
+                  {formatINR(order.total_paise)}
+                </dd>
+              </div>
+            </dl>
+          </section>
+
+          <section className="rounded-3xl border border-ink/10 bg-white p-5 sm:p-6">
+            <div className="flex items-center justify-between gap-4">
+              <h2 className="font-display text-xl font-semibold text-ink">
+                Status
+              </h2>
+              <span className="rounded-full bg-success/10 px-3 py-1 text-sm font-semibold text-success">
+                {statusLabel}
+              </span>
             </div>
-            <div>
-              <p className="text-muted">Shipping</p>
-              <p className="font-semibold">
-                {subtotal >= 99_900 ? "Free" : formatINR(shipping)}
-              </p>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="font-semibold text-ink">Total</p>
-              <p className="text-2xl font-bold text-ink">{formatINR(total)}</p>
-            </div>
-            <div>
-              <p className="text-muted">Estimated delivery</p>
-              <p>{formattedDate}</p>
-            </div>
-          </div>
-        </div>
+            <p className="mt-4 text-sm text-muted">
+              Estimated delivery:{" "}
+              <span className="font-medium text-ink">
+                {estimatedDeliveryLabel}
+              </span>
+            </p>
+          </section>
 
-        {/* Delivery address */}
-        <div className="mb-8 p-6 bg-white rounded-xl">
-          <h3 className="font-semibold text-ink mb-4">Delivery address</h3>
-          <p className="text-muted">
-            {order.address_line1}<br />
-            {order.city}, {order.state} {order.pincode}
-          </p>
-        </div>
-
-        {/* Status badge */}
-        <div className="mb-8 p-6 bg-bg rounded-xl">
-          <h3 className="font-semibold text-ink mb-4">Status</h3>
-          <p className="text-muted">{order.status}</p>
-        </div>
-
-        {/* First session tip card */}
-        <div className="p-6 bg-bg rounded-xl mb-8">
-          <h3 className="font-semibold text-ink mb-4">First session tip</h3>
-          <p className="text-muted">{tipText}</p>
-        </div>
-
-        {/* Masked email */}
-        <div className="mb-8 p-6 bg-white rounded-xl">
-          <h3 className="font-semibold text-ink mb-4">Contact</h3>
-          <p className="text-muted">
-            <strong>Email:</strong> {maskedEmail}<br />
-            <span className="hidden">Phone: not rendered</span>
-          </p>
-        </div>
+          <section className="rounded-3xl border border-ink/10 bg-white p-5 sm:p-6">
+            <h2 className="font-display text-xl font-semibold text-ink">
+              Delivery address
+            </h2>
+            <address className="mt-4 not-italic leading-relaxed text-muted">
+              <span className="block font-medium text-ink">
+                {order.customer_name}
+              </span>
+              <span className="mt-1 block">{order.address_line1}</span>
+              <span className="block">
+                {order.city}, {order.state} {order.pincode}
+              </span>
+            </address>
+            <p className="mt-4 border-t border-ink/10 pt-4 text-sm text-muted">
+              Email:{" "}
+              <span className="font-medium text-ink">
+                {maskEmail(order.email)}
+              </span>
+            </p>
+          </section>
+        </aside>
       </div>
     </div>
   );
