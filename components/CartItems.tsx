@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useCart } from "@/lib/cart";
-import { formatINR, getProduct } from "@/lib/products";
+import { formatINR, PRODUCTS } from "@/lib/products";
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
@@ -10,35 +10,32 @@ const focusRing =
 export default function CartItems() {
   const { items, setQty, removeItem } = useCart();
 
-  // Prices always come from the catalogue, never from stored cart state.
   const lines = items.flatMap((item) => {
-    const product = getProduct(item.productId);
+    const product = PRODUCTS.find((candidate) => candidate.id === item.productId);
     return product ? [{ item, product }] : [];
   });
+
+  if (lines.length === 0) {
+    return null;
+  }
 
   const subtotalPaise = lines.reduce(
     (total, { item, product }) => total + product.pricePaise * item.qty,
     0,
   );
 
-  if (lines.length === 0) {
-    return <p className="py-10 text-center text-sm text-muted">Your cart is empty.</p>;
-  }
-
   return (
     <div>
       <ul className="divide-y divide-ink/10">
         {lines.map(({ item, product }) => (
           <li key={product.id} className="flex gap-4 py-4 first:pt-0">
-            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-ink/10 bg-white sm:h-24 sm:w-24">
-              <Image
-                src={product.image}
-                alt={product.name}
-                fill
-                sizes="96px"
-                className="object-cover"
-              />
-            </div>
+            <Image
+              src={product.image}
+              alt={product.name}
+              width={64}
+              height={64}
+              className="h-16 w-16 shrink-0 rounded-2xl border border-ink/10 bg-white object-cover"
+            />
 
             <div className="min-w-0 flex-1">
               <div className="flex items-start justify-between gap-3">
@@ -55,7 +52,7 @@ export default function CartItems() {
                 </p>
               </div>
 
-              <div className="mt-2 flex items-center justify-between gap-3">
+              <div className="mt-3 flex items-center justify-between gap-3">
                 <div className="inline-flex items-center rounded-xl border border-ink/15 bg-white">
                   <button
                     type="button"
@@ -86,7 +83,7 @@ export default function CartItems() {
                   type="button"
                   onClick={() => removeItem(product.id)}
                   aria-label={`Remove ${product.name} from cart`}
-                  className={`rounded-lg px-1 py-1 text-xs font-medium text-muted underline-offset-2 transition-colors hover:text-error hover:underline ${focusRing}`}
+                  className={`rounded-lg px-2 py-1 text-xs font-medium text-muted underline-offset-2 transition-colors hover:text-error hover:underline ${focusRing}`}
                 >
                   Remove
                 </button>
