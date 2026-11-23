@@ -10,14 +10,17 @@
   --color-error: #DC2626;
 }
 
-@theme inline {
-  --font-sans: var(--font-inter);
-  --font-display: var(--font-fredoka);
+@utility font-display {
+  font-family: var(--font-display);
 }
 
 @layer base {
   body {
     @apply bg-bg text-ink;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-display);
   }
 }
 

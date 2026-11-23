@@ -7,13 +7,13 @@ import CartDrawer from "@/components/CartDrawer";
 import { CartProvider } from "@/lib/cart";
 
 const fredoka = Fredoka({
-  variable: "--font-fredoka",
+  variable: "--font-display",
   subsets: ["latin"],
   display: "swap",
 });
 
 const inter = Inter({
-  variable: "--font-inter",
+  variable: "--font-sans",
   subsets: ["latin"],
   display: "swap",
 });
