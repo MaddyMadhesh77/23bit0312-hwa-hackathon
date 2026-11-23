@@ -38,48 +38,48 @@ export default function Home() {
   return (
     <>
       <section className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8 items-center px-4 py-16">
-      <div>
-        <h1 className="text-4xl md:text-5xl font-bold">
-          The puzzle toy that paces itself.
-        </h1>
-        <p className="mt-6 text-lg text-muted">
-          A wind-up tower that unlocks six puzzles over six hours. No batteries.
-          No apps.
-        </p>
-        <Link href="/product" className="btn btn-primary mt-8">
-          Meet TickTail
-        </Link>
-      </div>
+        <div>
+          <h1 className="text-4xl md:text-5xl font-bold">
+            The puzzle toy that paces itself.
+          </h1>
+          <p className="mt-6 text-lg text-muted">
+            A wind-up tower that unlocks six puzzles over six hours. No batteries.
+            No apps.
+          </p>
+          <Link href="/product" className="btn btn-primary mt-8">
+            Meet TickTail
+          </Link>
+        </div>
 
-      <div>
-        <Image
-          src="/images/hero.webp"
-          priority
-          width={800}
-          height={600}
-          alt="TickTail puzzle tower with six chambers"
-          className="h-auto w-full rounded-3xl object-cover"
-        />
-      </div>
-    </section>
+        <div>
+          <Image
+            src="/images/hero.webp"
+            priority
+            width={800}
+            height={600}
+            alt="TickTail puzzle tower with six chambers"
+            className="h-auto w-full rounded-3xl object-cover"
+          />
+        </div>
+      </section>
 
-    <section className="max-w-5xl mx-auto px-4 pb-16">
-      <h2 className="text-3xl md:text-4xl font-bold">How it works</h2>
+      <section className="max-w-5xl mx-auto px-4 pb-16">
+        <h2 className="text-3xl md:text-4xl font-bold">How it works</h2>
 
-      <div className="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {howItWorks.map(({ hour, title, description }) => (
-          <article
-            key={hour}
-            className="rounded-2xl border border-ink/10 bg-white/60 p-4"
-          >
-            <span className="inline-flex rounded-full bg-accent px-2.5 py-1 text-xs font-semibold text-ink">
-              Hour {hour}
-            </span>
-            <h3 className="mt-4 font-semibold text-ink">{title}</h3>
-            <p className="mt-2 text-sm text-muted">{description}</p>
-          </article>
-        ))}
-      </div>
+        <div className="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {howItWorks.map(({ hour, title, description }) => (
+            <article
+              key={hour}
+              className="rounded-2xl border border-ink/10 bg-white/60 p-4"
+            >
+              <span className="inline-flex rounded-full bg-accent px-2.5 py-1 text-xs font-semibold text-ink">
+                Hour {hour}
+              </span>
+              <h3 className="mt-4 font-semibold text-ink">{title}</h3>
+              <p className="mt-2 text-sm text-muted">{description}</p>
+            </article>
+          ))}
+        </div>
       </section>
     </>
   );
