@@ -38,7 +38,7 @@ export default function CartDrawer() {
         role="dialog"
         aria-modal="true"
         aria-label="Shopping cart"
-        className="absolute right-0 top-0 flex h-full w-full max-w-sm flex-col bg-bg shadow-xl transition-transform duration-200 ease-out"
+        className="absolute right-0 top-0 flex h-full w-full max-w-sm flex-col bg-bg shadow-xl transition-transform duration-200 ease-out translate-x-0"
       >
         <div className="flex items-center justify-between border-b border-ink/10 px-5 py-4">
           <h2 className="font-display text-xl font-semibold text-ink">Your cart</h2>
