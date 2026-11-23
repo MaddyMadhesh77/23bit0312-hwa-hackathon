@@ -1,5 +1,6 @@
 import EngagementTimeline from "@/components/EngagementTimeline";
 import ProductBuy from "@/components/ProductBuy";
+import ProductFAQ from "@/components/ProductFAQ";
 import ProductSpecs from "@/components/ProductSpecs";
 import { PRODUCTS } from "@/lib/products";
 
@@ -17,6 +18,8 @@ export default function ProductPage() {
       <EngagementTimeline />
       <h2 className="text-2xl font-bold mt-12">Specs & safety</h2>
       <ProductSpecs />
+      <h2 className="text-2xl font-bold mt-12">Questions, answered</h2>
+      <ProductFAQ />
     </div>
   );
 }
