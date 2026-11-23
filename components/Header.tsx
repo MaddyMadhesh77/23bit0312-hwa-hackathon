@@ -1,9 +1,15 @@
+"use client";
+
 import Link from "next/link";
+import { useCart } from "@/lib/cart";
 
 const focusRing =
   "rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
 
 export default function Header() {
+  const { cartCount } = useCart();
+  const itemLabel = cartCount === 1 ? "item" : "items";
+
   return (
     <header className="sticky top-0 z-40 border-b border-ink/10 bg-bg/90 backdrop-blur">
       <div className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between gap-3 px-4 sm:px-6">
@@ -32,7 +38,7 @@ export default function Header() {
 
         <Link
           href="/cart"
-          aria-label="Cart, 0 items"
+          aria-label={`Cart, ${cartCount} ${itemLabel}`}
           className={`relative -mr-1 inline-flex h-10 w-10 items-center justify-center text-ink transition-colors hover:text-primary ${focusRing}`}
         >
           <svg
@@ -53,7 +59,7 @@ export default function Header() {
             aria-hidden="true"
             className="absolute -top-0.5 -right-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[11px] font-semibold leading-none text-ink"
           >
-            0
+            {cartCount}
           </span>
         </Link>
       </div>

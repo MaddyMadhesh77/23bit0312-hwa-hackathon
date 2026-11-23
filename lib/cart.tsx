@@ -18,7 +18,14 @@ export type CartItem = {
 type CartContextValue = {
   items: CartItem[];
   addItem: (productId: string, qty: number) => void;
+  removeItem: (productId: string) => void;
+  setQty: (productId: string, qty: number) => void;
+  clearCart: () => void;
   cartCount: number;
+  isDrawerOpen: boolean;
+  openDrawer: () => void;
+  closeDrawer: () => void;
+  isHydrated: boolean;
 };
 
 const STORAGE_KEY = "ticktail-cart";
@@ -49,7 +56,8 @@ function parseStoredItems(raw: string): CartItem[] {
 export function CartProvider({ children }: { children: ReactNode }) {
   // Always start empty so the first client render matches the server render.
   const [items, setItems] = useState<CartItem[]>([]);
-  const [hydrated, setHydrated] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   // Read localStorage only after mount, so hydration can never mismatch.
   useEffect(() => {
@@ -61,18 +69,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
       // Storage may be unavailable (private mode, blocked cookies, etc.).
     }
     setItems(stored);
-    setHydrated(true);
+    setIsHydrated(true);
   }, []);
 
   // Persist on every change, but never before the stored cart has been loaded.
   useEffect(() => {
-    if (!hydrated) return;
+    if (!isHydrated) return;
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
     } catch {
       // Ignore write failures; the in-memory cart still works.
     }
-  }, [items, hydrated]);
+  }, [items, isHydrated]);
 
   const addItem = useCallback((productId: string, qty: number) => {
     if (!Number.isInteger(qty) || qty < 1) return;
@@ -87,14 +95,69 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const removeItem = useCallback((productId: string) => {
+    setItems((current) =>
+      current.filter((item) => item.productId !== productId),
+    );
+  }, []);
+
+  // A quantity of zero or less removes the line entirely.
+  const setQty = useCallback((productId: string, qty: number) => {
+    if (!Number.isFinite(qty)) return;
+    setItems((current) => {
+      if (!current.some((item) => item.productId === productId)) return current;
+      if (qty <= 0) {
+        return current.filter((item) => item.productId !== productId);
+      }
+      const nextQty = Math.floor(qty);
+      return current.map((item) =>
+        item.productId === productId ? { ...item, qty: nextQty } : item,
+      );
+    });
+  }, []);
+
+  const clearCart = useCallback(() => {
+    setItems([]);
+  }, []);
+
+  const openDrawer = useCallback(() => {
+    setIsDrawerOpen(true);
+  }, []);
+
+  const closeDrawer = useCallback(() => {
+    setIsDrawerOpen(false);
+  }, []);
+
   const cartCount = useMemo(
     () => items.reduce((total, item) => total + item.qty, 0),
     [items],
   );
 
   const value = useMemo(
-    () => ({ items, addItem, cartCount }),
-    [items, addItem, cartCount],
+    () => ({
+      items,
+      addItem,
+      removeItem,
+      setQty,
+      clearCart,
+      cartCount,
+      isDrawerOpen,
+      openDrawer,
+      closeDrawer,
+      isHydrated,
+    }),
+    [
+      items,
+      addItem,
+      removeItem,
+      setQty,
+      clearCart,
+      cartCount,
+      isDrawerOpen,
+      openDrawer,
+      closeDrawer,
+      isHydrated,
+    ],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

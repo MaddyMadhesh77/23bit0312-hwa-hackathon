@@ -36,7 +36,7 @@ function weightLabel(kit: Product): string {
 }
 
 export default function ProductBuy({ kits }: ProductBuyProps) {
-  const { addItem } = useCart();
+  const { addItem, openDrawer } = useCart();
   const [activeImage, setActiveImage] = useState(0);
   const [selectedId, setSelectedId] = useState(kits[0]?.id ?? "");
   const [qty, setQty] = useState(1);
@@ -62,6 +62,7 @@ export default function ProductBuy({ kits }: ProductBuyProps) {
   function handleAddToCart() {
     if (!selected) return;
     addItem(selected.id, qty);
+    openDrawer();
     setAdded(true);
     if (addedTimer.current !== null) {
       window.clearTimeout(addedTimer.current);
