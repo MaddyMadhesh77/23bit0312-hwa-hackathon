@@ -10,12 +10,6 @@ type ProductBuyProps = {
   kits: Product[];
 };
 
-const GALLERY_IMAGES = [
-  "/images/hero.webp",
-  "/images/exploded.webp",
-  "/images/lifestyle.webp",
-] as const;
-
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
 
@@ -52,6 +46,21 @@ export default function ProductBuy({ kits }: ProductBuyProps) {
     return <p className="text-muted">No kits are available right now.</p>;
   }
 
+  const galleryImages = [
+    {
+      src: "/images/hero.webp",
+      alt: `TickTail tower front view, ${selectedKit.name}`,
+    },
+    {
+      src: "/images/exploded.webp",
+      alt: "Exploded view showing the six sealed chambers",
+    },
+    {
+      src: "/images/lifestyle.webp",
+      alt: "A dog solving a TickTail puzzle tray in a living room",
+    },
+  ] as const;
+
   function handleAddToCart() {
     addItem(selectedKit.id, qty);
     if (mode === "sub") {
@@ -74,20 +83,20 @@ export default function ProductBuy({ kits }: ProductBuyProps) {
     <div className="mt-8 grid gap-10 md:mt-12 md:grid-cols-2 md:gap-12">
       <section aria-label="Product gallery">
         <Image
-          src={GALLERY_IMAGES[activeImage]}
-          alt={selectedKit.name}
+          src={galleryImages[activeImage].src}
+          alt={galleryImages[activeImage].alt}
           width={800}
           height={600}
           className="h-auto w-full rounded-3xl border border-ink/10 bg-white object-cover"
         />
 
         <div className="mt-3 grid grid-cols-3 gap-3">
-          {GALLERY_IMAGES.map((src, index) => {
+          {galleryImages.map((image, index) => {
             const isSelected = index === activeImage;
 
             return (
               <button
-                key={src}
+                key={image.src}
                 type="button"
                 onClick={() => setActiveImage(index)}
                 aria-label={`Show product image ${index + 1}`}
@@ -97,8 +106,8 @@ export default function ProductBuy({ kits }: ProductBuyProps) {
                 }`}
               >
                 <Image
-                  src={src}
-                  alt=""
+                  src={image.src}
+                  alt={image.alt}
                   width={240}
                   height={180}
                   className="h-auto w-full object-cover"
